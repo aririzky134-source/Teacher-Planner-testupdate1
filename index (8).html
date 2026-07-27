@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Planner 2026/2027 | By Teacher Creator Academy</title>
+    
+    <!-- MENGGUNAKAN FONT POPPINS SESUAI PERMINTAAN -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="./assets/logo-tca.png">
+    <meta name="theme-color" content="#090909">
+
+    <style>
+        :root {
+            /* THEME COLORS */
+            --bg-main: #090909; 
+            --bg-card: #171717; 
+            --bg-hover: #222222;
+            --primary-green: #16a34a; 
+            --primary-green-hover: #15803d;
+            --accent-green: #22c55e;
+            --text-primary: #ffffff; 
+            --text-secondary: #a1a1aa;
+            --border: rgba(255, 255, 255, 0.08); 
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+            
+            /* TYPOGRAPHY & SHAPES */
+            --font-main: 'Poppins', sans-serif;
+            --radius-sm: 10px; 
+            --radius-md: 16px; 
+            --radius-lg: 20px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --glass-bg: rgba(23, 23, 23, 0.7);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: var(--font-main); }
+        body { 
+            background-color: var(--bg-main); 
+            color: var(--text-primary); 
+            overflow-x: hidden; 
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary-green) var(--bg-main);
+        }
+        
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-main); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--primary-green); }
+
+        a { text-decoration: none; color: inherit; }
+        ul { list-style: none; }
+        button, input, select, textarea { border: none; outline: none; background: none; font-family: inherit; }
+        
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1) brightness(2) sepia(1) hue-rotate(80deg) saturate(5);
+            cursor: pointer; opacity: 0.8; transition: var(--transition);
+        }
+        input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
+
+        h1 { font-size: clamp(1.5rem, 4vw, 2.2rem); font-weight: 700; line-height: 1.2; }
+        h2 { font-size: clamp(1.1rem, 3vw, 1.4rem); font-weight: 600; }
+        h3 { font-size: 1.1rem; font-weight: 500; }
+        p { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; }
+        
+        .btn { 
+            background-color: var(--primary-green); 
+            color: white; 
+            padding: 10px 20px; 
+            border-radius: var(--radius-sm); 
+            font-weight: 500; 
+            cursor: pointer; 
+            transition: var(--transition); 
+            display: inline-flex; 
+            align-items: center; 
+            gap: 8px; 
+            font-size: 0.9rem;
+            box-shadow: 0 4px 12px rgba(22, 163, 74, 0.2);
+        }
+        .btn:hover { 
+            background-color: var(--primary-green-hover); 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(22, 163, 74, 0.3);
+        }
+        .btn-outline { 
+            background-color: transparent; 
+            border: 1px solid var(--border); 
+            color: var(--text-primary); 
+            box-shadow: none;
+        }
+        .btn-outline:hover { 
+            background-color: rgba(255,255,255,0.05); 
+            border-color: var(--text-secondary); 
+            transform: translateY(-2px);
+        }
+        .btn-ghost { background: transparent; color: var(--primary-green); box-shadow: none; padding: 5px 10px; cursor: pointer; transition: var(--transition); }
+        .btn-ghost:hover { background: rgba(22, 163, 74, 0.1); border-radius: var(--radius-sm); }
+        
+        .input-group { margin-bottom: 16px; text-align: left;}
+        .input-group label { display: block; margin-bottom: 8px; font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; }
+        .input-control { 
+            width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--border); 
+            color: var(--text-primary); padding: 12px 16px; border-radius: var(--radius-sm); 
+            transition: var(--transition); font-size: 0.95rem;
+        }
+        .input-control:focus { border-color: var(--accent-green); box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1); }
+
+        .card { 
+            background: var(--bg-card); 
+            border: 1px solid var(--border); 
+            border-radius: var(--radius-lg); 
+            padding: 24px; 
+            transition: var(--transition); 
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        .card:hover { border-color: rgba(255,255,255,0.15); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+
+        .screen { display: none; min-height: 100vh; animation: fadeIn 0.4s ease-out; }
+        .screen.active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        #welcome-screen, #login-screen { flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; background: radial-gradient(circle at top, #1a1a1a 0%, var(--bg-main) 100%);}
+        .welcome-logo, .login-logo { width: 120px; margin-bottom: 24px; object-fit: contain; filter: drop-shadow(0 0 20px rgba(22,163,74,0.3));}
+        .welcome-content, .login-card { max-width: 400px; width: 100%; z-index: 10;}
+        
+        #dashboard-screen { flex-direction: row; align-items: stretch; }
+        .sidebar { 
+            width: 260px; background: var(--bg-card); border-right: 1px solid var(--border); 
+            display: flex; flex-direction: column; padding: 20px 16px; height: 100vh; 
+            position: sticky; top: 0; z-index: 50; transition: transform 0.3s ease;
+        }
+        
+        .brand { 
+            display: flex; 
+            align-items: center; 
+            gap: 14px; 
+            margin-bottom: 24px; 
+            padding-bottom: 4px; 
+            border-bottom: none;
+        }
+        .brand img { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; }
+        
+        .nav-menu { flex: 1; overflow-y: auto; }
+        .nav-item { 
+            display: flex; align-items: center; gap: 12px; padding: 12px 16px; 
+            color: var(--text-secondary); border-radius: var(--radius-sm); cursor: pointer; 
+            font-size: 0.95rem; margin-bottom: 4px; transition: var(--transition);
+        }
+        .nav-item i { width: 20px; text-align: center; font-size: 1.1rem;}
+        .nav-item:hover { background: rgba(255, 255, 255, 0.05); color: var(--text-primary); }
+        .nav-item.active { background: linear-gradient(90deg, rgba(22,163,74,0.2) 0%, transparent 100%); color: var(--accent-green); font-weight: 600; border-left: 3px solid var(--accent-green);}
+        
+        .main-content { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow-y: auto; position: relative;}
+        
+        .header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 16px 32px; border-bottom: 1px solid var(--border); 
+            background: rgba(9, 9, 9, 0.8); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            position: sticky; top: 0; z-index: 40; 
+        }
+        .page-content { padding: 32px; max-width: 1400px; margin: 0 auto; width: 100%;}
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap:16px;}
+        
+        .table-responsive { overflow-x: auto; width: 100%; border-radius: var(--radius-sm); border: 1px solid var(--border);}
+        .data-table { width: 100%; border-collapse: collapse; text-align: left; white-space: nowrap; }
+        .data-table th, .data-table td { padding: 16px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+        .data-table th { color: var(--text-secondary); font-weight: 500; background: rgba(255,255,255,0.02); text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px;}
+        .data-table tr:hover { background: rgba(255,255,255,0.01); }
+        .data-table tr:last-child td { border-bottom: none; }
+        
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 999; opacity: 0; transition: opacity 0.3s ease; }
+        .modal-overlay.active { display: flex; opacity: 1; }
+        .modal { background: var(--bg-card); width: 100%; max-width: 500px; border-radius: var(--radius-lg); padding: 32px; max-height: 90vh; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1); transform: scale(0.95); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .modal-overlay.active .modal { transform: scale(1); }
+        .modal-header { display: flex; justify-content: space-between; margin-bottom: 24px; align-items: center;}
+        
+        .toast { position: fixed; bottom: 24px; right: 24px; background: var(--bg-card); border: 1px solid var(--border); padding: 16px 24px; border-radius: var(--radius-md); display: flex; align-items: center; gap: 12px; transform: translateX(150%); transition: var(--transition); z-index: 1000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); font-size: 0.95rem; font-weight: 500;}
+        .toast.show { transform: translateX(0); }
+        
+        .loading-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(9,9,9,0.9); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: center; z-index: 9999; flex-direction: column; }
+        .spinner { width: 50px; height: 50px; border: 3px solid rgba(255,255,255,0.1); border-top-color: var(--accent-green); border-radius: 50%; animation: spin 1s ease-in-out infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; display: inline-block;}
+        .badge-green { background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.3);}
+        .badge-red { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3);}
+        .badge-yellow { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3);}
+        .badge-blue { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3);}
+
+        .dash-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 20px; animation: fadeIn 0.5s ease-out; }
+        .col-12 { grid-column: span 12; }
+        .col-8 { grid-column: span 8; }
+        .col-6 { grid-column: span 6; }
+        .col-4 { grid-column: span 4; }
+        .col-3 { grid-column: span 3; }
+
+        .welcome-header { display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, rgba(22,163,74,0.1) 0%, rgba(23,23,23,0) 100%); border-left: 4px solid var(--accent-green); padding: 30px;}
+        .welcome-text h1 { font-size: 1.8rem; margin-bottom: 8px;}
+        .welcome-avatar { width: 60px; height: 60px; border-radius: 50%; background: var(--bg-hover); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: var(--accent-green); border: 2px solid var(--border); position: relative;}
+        .welcome-avatar::after { content: '\f058'; font-family: 'Font Awesome 6 Free'; font-weight: 900; position: absolute; bottom: -2px; right: -2px; color: var(--accent-green); background: var(--bg-main); border-radius: 50%; font-size: 1rem;}
+
+        .stat-cards-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+        .stat-card { display: flex; align-items: center; gap: 16px; padding: 20px; border-radius: var(--radius-md); background: linear-gradient(180deg, var(--bg-card) 0%, rgba(23,23,23,0.4) 100%); border: 1px solid var(--border); transition: var(--transition); cursor: default;}
+        .stat-card:hover { transform: translateY(-5px); border-color: rgba(22,163,74,0.3); }
+        .stat-icon { width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; background: rgba(255,255,255,0.03); }
+        .stat-info h4 { color: var(--text-secondary); font-size: 0.85rem; font-weight: 500; margin-bottom: 4px; }
+        .stat-info .value { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); }
+
+        .quick-actions-bar { display: flex; gap: 12px; flex-wrap: wrap; background: transparent; padding: 0; border: none;}
+        .action-btn { flex: 1; min-width: 150px; padding: 16px; background: rgba(255,255,255,0.03); border: 1px dashed rgba(255,255,255,0.15); border-radius: var(--radius-md); color: var(--text-primary); font-weight: 500; display: flex; flex-direction: column; align-items: center; gap: 8px; transition: var(--transition); cursor: pointer;}
+        .action-btn i { font-size: 1.4rem; color: var(--accent-green); transition: transform 0.3s; }
+        .action-btn:hover { background: rgba(22,163,74,0.05); border-color: var(--accent-green); border-style: solid; }
+        .action-btn:hover i { transform: scale(1.2); }
+
+        .dash-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 12px;}
+        .dash-card-title { font-size: 1.1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;}
+        
+        .schedule-list { display: flex; flex-direction: column; gap: 12px; }
+        .schedule-item { display: flex; align-items: center; padding: 12px 16px; background: rgba(255,255,255,0.02); border-radius: var(--radius-sm); border-left: 3px solid var(--info); }
+        .schedule-time { width: 100px; font-weight: 600; font-size: 0.9rem; color: var(--text-secondary);}
+        .schedule-detail { flex: 1; }
+        .schedule-detail strong { display: block; font-size: 0.95rem; margin-bottom: 2px;}
+        .schedule-detail span { font-size: 0.8rem; color: var(--text-secondary); }
+
+        .reminder-item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px dashed rgba(255,255,255,0.05); }
+        .reminder-item:last-child { border-bottom: none; }
+        .reminder-icon { color: var(--warning); margin-top: 2px;}
+        .reminder-text { flex: 1; font-size: 0.9rem; }
+        .reminder-date { font-size: 0.75rem; color: var(--danger); font-weight: 500; display: block; margin-top: 4px;}
+
+        .progress-container { margin-top: 10px; }
+        .progress-label { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 8px; color: var(--text-secondary);}
+        .progress-track { width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary-green), var(--accent-green)); border-radius: 10px; transition: width 1s ease-out; }
+
+        .cal-header { display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 10px; font-size: 0.9rem;}
+        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; font-size: 0.8rem; }
+        .cal-day-name { color: var(--text-secondary); font-weight: 500; margin-bottom: 4px;}
+        .cal-day { padding: 6px 0; border-radius: 4px; cursor: default; position: relative;}
+        .cal-day.today { background: var(--accent-green); color: black; font-weight: 700; }
+        .cal-day.has-event::after { content: ''; position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px; border-radius: 50%; background: var(--warning); }
+        
+        .stat-bar-item { margin-bottom: 12px;}
+        .stat-bar-label { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 4px; }
+        
+        .empty-state { text-align: center; padding: 30px 10px; color: var(--text-secondary); }
+        .empty-state i { font-size: 2.5rem; opacity: 0.5; margin-bottom: 12px; display: block;}
+        
+        .skeleton { background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%); background-size: 200% 100%; animation: loading 1.5s infinite; border-radius: var(--radius-sm); }
+        @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+        .score-widget { text-align: center; padding: 10px 0;}
+        .score-circle { width: 120px; height: 120px; border-radius: 50%; margin: 0 auto 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 8px solid; position: relative;}
+        .score-circle.good { border-color: var(--accent-green); color: var(--accent-green); box-shadow: 0 0 20px rgba(34,197,94,0.2);}
+        .score-circle.avg { border-color: var(--warning); color: var(--warning); box-shadow: 0 0 20px rgba(245,158,11,0.2);}
+        .score-circle.low { border-color: var(--danger); color: var(--danger); box-shadow: 0 0 20px rgba(239,68,68,0.2);}
+        .score-value { font-size: 2rem; font-weight: 700; line-height: 1; }
+        .score-max { font-size: 0.8rem; opacity: 0.7;}
+
+        /* CSS BARU UNTUK INTERAKTIF TO-DO LIST */
+        .todo-quick-item { 
+            display:flex; align-items:center; gap:14px; padding:12px; 
+            background:rgba(255,255,255,0.02); border-radius:var(--radius-sm); 
+            margin-bottom:8px; transition:var(--transition); 
+            border:1px solid rgba(255,255,255,0.05); 
+        }
+        .todo-quick-item:hover { background:rgba(255,255,255,0.06); }
+        .todo-quick-item.done { opacity:0.6; }
+        .todo-quick-item.done .todo-text strong { text-decoration:line-through; color:var(--text-secondary); }
+        .todo-check { 
+            cursor:pointer; font-size:1.4rem; color:var(--text-secondary); 
+            transition:var(--transition); display: flex; align-items: center; justify-content: center;
+        }
+        .todo-check:hover { color:var(--accent-green); transform:scale(1.15); }
+        .todo-check.done { color:var(--accent-green); }
+
+        @media (max-width: 1200px) {
+            .stat-cards-container { grid-template-columns: repeat(2, 1fr); }
+            .col-8 { grid-column: span 12; }
+            .col-4 { grid-column: span 6; }
+        }
+        @media (max-width: 992px) {
+            .col-6 { grid-column: span 12; }
+        }
+        @media (max-width: 768px) {
+            #dashboard-screen { flex-direction: column; }
+            .sidebar { 
+                position: fixed; left: -100%; top: 0; bottom: 0; width: 280px; 
+                z-index: 1000; box-shadow: 10px 0 30px rgba(0,0,0,0.5); 
+            }
+            .sidebar.mobile-open { left: 0; }
+            .header { padding: 16px; }
+            .page-content { padding: 16px; }
+            
+            .col-4, .col-3, .col-6, .col-8, .col-12 { grid-column: span 12; }
+            .stat-cards-container { grid-template-columns: 1fr; }
+            .welcome-header { flex-direction: column; text-align: center; gap: 16px;}
+            
+            .mobile-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.5); z-index: 999; display: none; backdrop-filter: blur(2px);}
+            .mobile-overlay.active { display: block; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- OVERLAYS -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <p style="margin-top:16px; font-weight:500; letter-spacing:1px;">Sinkronisasi Data...</p>
+    </div>
+    
+    <div class="toast" id="toastBox">
+        <i class="fas fa-check-circle" id="toastIcon" style="font-size:1.2rem;"></i>
+        <span id="toastMessage"></span>
+    </div>
+
+    <!-- MOBILE SIDEBAR OVERLAY -->
+    <div class="mobile-overlay" id="mobileOverlay" onclick="app.toggleMobileMenu()"></div>
+
+    <!-- FORM MODAL -->
+    <div class="modal-overlay" id="formModalOverlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modalTitle">Tambah Data</h3>
+                <button class="btn-ghost" onclick="app.closeModal()"><i class="fas fa-times" style="font-size:1.2rem;"></i></button>
+            </div>
+            <form id="dynamicForm" onsubmit="app.saveData(event)">
+                <div id="modalFormContent"></div>
+                <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:30px;">
+                    <button type="button" class="btn btn-outline" onclick="app.closeModal()">Batal</button>
+                    <button type="submit" class="btn"><i class="fas fa-save"></i> Simpan Data</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL KONFIRMASI HAPUS KUSTOM -->
+    <div class="modal-overlay" id="confirmModalOverlay" style="z-index: 10000;">
+        <div class="modal" style="max-width: 400px; text-align: center;">
+            <i class="fas fa-exclamation-triangle" style="font-size:3rem; color:var(--danger); margin-bottom: 16px;"></i>
+            <h3 style="margin-bottom: 8px;">Konfirmasi Hapus</h3>
+            <p style="margin-bottom: 24px; font-size:0.9rem;">Apakah Anda yakin ingin menghapus data ini secara permanen dari database?</p>
+            <div style="display:flex; justify-content:center; gap:12px;">
+                <button type="button" class="btn btn-outline" id="confirmCancelBtn" style="padding:8px 16px;">Batal</button>
+                <button type="button" class="btn" id="confirmActionBtn" style="background-color:var(--danger); border-color:var(--danger); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2); padding:8px 16px;">Hapus</button>
+            </div>
+        </div>
+    </div>
+
+    <main class="screen active" id="welcome-screen">
+        <img src="assets/logo-tca.png" alt="TCA Logo" class="welcome-logo" id="welcomeLogo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+        <i class="fas fa-graduation-cap" style="font-size:4rem; color:var(--accent-green); margin-bottom:20px; display:none;"></i>
+        <div class="welcome-content">
+            <h1>Teacher Planner <br><span style="color:var(--accent-green)">2026/2027</span></h1>
+            <br>
+            <p style="font-size: 1.1rem;">Sistem perencanaan terintegrasi khusus untuk Guru Kreatif Indonesia.</p>
+            <br><br>
+            <button class="btn" style="padding: 14px 28px; font-size:1.05rem;" onclick="app.navigate('login-screen')">Mulai Ruang Kerja <i class="fas fa-arrow-right"></i></button>
+        </div>
+    </main>
+
+    <main class="screen" id="login-screen">
+        <div class="card login-card">
+            <h2 style="margin-bottom: 8px;">Akses Ruang Kerja</h2>
+            <p style="margin-bottom: 24px;">Silakan otentikasi identitas Anda Cikgu.</p>
+            <form onsubmit="app.handleLogin(event)">
+                <div class="input-group">
+                    <label>Nama Lengkap dengan Gelar</label>
+                    <input type="text" class="input-control" id="loginName" required placeholder="Contoh: Budi Santoso, S.Pd">
+                </div>
+                <div class="input-group">
+                    <label>Email Workspace (Kunci Database)</label>
+                    <input type="email" class="input-control" id="loginEmail" required placeholder="guru.kreatif@sekolah.id">
+                </div>
+                <div class="input-group">
+                    <label>Kode Keamanan Institusi</label>
+                    <input type="password" class="input-control" id="loginCode" required placeholder="Masukkan Kode Akses">
+                </div>
+                <button type="submit" class="btn" style="width:100%; justify-content:center; margin-top:10px; padding:14px;">Masuk ke Dashboard <i class="fas fa-sign-in-alt"></i></button>
+            </form>
+        </div>
+    </main>
+
+    <main class="screen" id="dashboard-screen">
+        <aside class="sidebar" id="sidebar">
+            <div class="brand">
+                <img src="assets/logo-tca.png" alt="Logo" id="sidebarLogo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                <i class="fas fa-layer-group" style="font-size:2rem; color:var(--accent-green); display:none;"></i>
+                <div style="display: flex; flex-direction: column; justify-content: center;">
+                    <h3 style="font-size:1.15rem; font-weight:600; line-height:1.2; letter-spacing: -0.3px; color: var(--text-primary);">Teacher Planner</h3>
+                    <span style="font-size:0.75rem; color:var(--text-secondary); font-weight:400; display: block; margin-top: 2px;">by TCA</span>
+                </div>
+            </div>
+            <ul class="nav-menu" id="navMenu"></ul>
+            
+            <div style="margin-top:auto; padding-top:20px; border-top:1px solid var(--border);">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div style="width:40px; height:40px; border-radius:50%; background:var(--bg-hover); display:flex; align-items:center; justify-content:center; border:1px solid var(--border);">
+                        <i class="fas fa-user" style="color:var(--text-secondary)"></i>
+                    </div>
+                    <div style="overflow:hidden;">
+                        <div id="userNameDisplaySidebar" style="font-size:0.9rem; font-weight:600; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">Nama</div>
+                        <div style="font-size:0.75rem; color:var(--accent-green);">Guru Aktif</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <div class="main-content">
+            <header class="header">
+                <div style="display:flex; align-items:center; gap:16px;">
+                    <button class="btn-outline" style="padding:8px 12px; display:none; border:none; font-size:1.2rem;" id="mobileToggle" onclick="app.toggleMobileMenu()">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div style="font-weight:600; font-size:1.2rem; letter-spacing:-0.5px;" id="headerTitle">Dashboard Overview</div>
+                </div>
+                
+                <div style="display:flex; gap:16px; align-items:center;">
+                    <span id="currentDateDisplay" style="font-size:0.85rem; color:var(--text-secondary); display:none;"></span>
+                    <button class="btn-outline" style="padding:8px 16px; font-size:0.85rem; border-radius:20px; border-color:var(--danger); color:var(--danger);" onclick="app.logout()">
+                        <i class="fas fa-power-off"></i> <span class="hide-mobile">Keluar</span>
+                    </button>
+                </div>
+            </header>
+            
+            <div class="page-content" id="contentArea"></div>
+            
+        </div>
+    </main>
+
+    <script>
+        // MENGGUNAKAN URL BACKEND YANG SAMA
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby5-suigC_eL4iJROUYWrm2faYuCY_pBWmcznv-jzfU_g7bNc0nfvlNHbJ11Rr87GE/exec"; 
+        
+        // Helper: Date Formatting
+        const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
+        
+        function getTodayString() {
+            const d = new Date();
+            return `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+        }
+
+        const app = {
+            user: { name: null, email: null, safeEmail: null },
+            activeYear: '2026-2027', 
+            activeModule: 'overview',
+            editingId: null, // Properti untuk melacak ID yang sedang di-edit
+            moduleDataCache: {}, // Cache data spesifik per tabel untuk fitur Edit
+            dashboardDataCache: {}, // Cache data dashboard (untuk aksi cepat seperti toggle To-Do)
+
+            modules: {
+                overview: { icon: 'fa-table-cells-large', title: 'Dasboard', render: 'custom' },
+                kalender: { icon: 'fa-calendar-days', title: 'Kalender Pendidikan', 
+                    fields: [ {id: 'tanggal', label: 'Tanggal', type: 'date'}, {id: 'judul', label: 'Nama Kegiatan', type: 'text'}, {id: 'kategori', label: 'Kategori', type: 'select', options: ['Akademik','Administrasi','Rapat','Pribadi']} ]
+                },
+                target: { icon: 'fa-bullseye', title: 'Target Mengajar', 
+                    fields: [ {id: 'judul', label: 'Judul Target', type: 'text'}, {id: 'deskripsi', label: 'Deskripsi', type: 'text'}, {id: 'deadline', label: 'Deadline', type: 'date'}, {id: 'progress', label: 'Progress (%)', type: 'number'} ]
+                },
+                jadwal: { icon: 'fa-clock', title: 'Jadwal Mengajar', 
+                    fields: [ {id: 'hari', label: 'Hari', type: 'select', options: ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu']}, {id: 'jam', label: 'Jam (cth: 07:00-08:30)', type: 'text'}, {id: 'mapel', label: 'Mata Pelajaran', type: 'text'}, {id: 'kelas', label: 'Kelas', type: 'text'}, {id: 'ruang', label: 'Ruangan', type: 'text'} ]
+                },
+                todo: { icon: 'fa-list-check', title: 'To Do Guru', 
+                    fields: [ {id: 'tugas', label: 'Tugas', type: 'text'}, {id: 'prioritas', label: 'Prioritas', type: 'select', options: ['Tinggi','Sedang','Rendah']}, {id: 'status', label: 'Status', type: 'select', options: ['Belum Selesai', 'Selesai']} ]
+                },
+                catatan: { icon: 'fa-note-sticky', title: 'Catatan Penting', 
+                    fields: [ {id: 'judul', label: 'Judul Catatan', type: 'text'}, {id: 'kategori', label: 'Kategori', type: 'select', options: ['Pembelajaran','Siswa','Pribadi','Administrasi']}, {id: 'isi', label: 'Isi Catatan', type: 'textarea'} ]
+                },
+                rapat: { icon: 'fa-users-viewfinder', title: 'Agenda Rapat', 
+                    fields: [ {id: 'nama', label: 'Nama Rapat', type: 'text'}, {id: 'tanggal', label: 'Tanggal', type: 'date'}, {id: 'lokasi', label: 'Lokasi', type: 'text'}, {id: 'hasil', label: 'Hasil/Tindak Lanjut', type: 'textarea'} ]
+                },
+                refleksi: { icon: 'fa-brain', title: 'Refleksi Mengajar', 
+                    fields: [ {id: 'tanggal', label: 'Tanggal', type: 'date'}, {id: 'baik', label: 'Apa yang berjalan baik?', type: 'text'}, {id: 'kurang', label: 'Kendala / Perlu perbaikan?', type: 'text'} ]
+                },
+                konten: { icon: 'fa-lightbulb', title: 'Ide Konten Guru', 
+                    fields: [ {id: 'ide', label: 'Judul Ide', type: 'text'}, {id: 'platform', label: 'Jenis', type: 'select', options: ['Reels','Carousel','Story','Webinar']}, {id: 'status', label: 'Status', type: 'select', options: ['Draft','Proses','Published']} ]
+                }
+            },
+
+            init() {
+                this.buildSidebar();
+                
+                if(window.innerWidth <= 768) {
+                    document.getElementById('mobileToggle').style.display = 'block';
+                }
+                
+                if(window.innerWidth > 768) {
+                    const dateEl = document.getElementById('currentDateDisplay');
+                    dateEl.style.display = 'block';
+                    dateEl.textContent = getTodayString();
+                }
+
+                const sessionStr = localStorage.getItem('tca_session_v2');
+                if(sessionStr) {
+                    this.user = JSON.parse(sessionStr);
+                    document.getElementById('userNameDisplaySidebar').textContent = this.user.name;
+                    this.navigate('dashboard-screen');
+                    this.loadModule('overview');
+                }
+            },
+
+            buildSidebar() {
+                const ul = document.getElementById('navMenu');
+                ul.innerHTML = '';
+                for(let key in this.modules) {
+                    const mod = this.modules[key];
+                    ul.innerHTML += `<li class="nav-item" id="nav-${key}" onclick="app.loadModule('${key}')"><i class="fas ${mod.icon}"></i> ${mod.title}</li>`;
+                }
+            },
+
+            toggleMobileMenu() {
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('mobileOverlay');
+                sidebar.classList.toggle('mobile-open');
+                overlay.classList.toggle('active');
+            },
+
+            handleLogin(e) {
+                e.preventDefault();
+                const code = document.getElementById('loginCode').value;
+                if(code === 'TCA2026' || code === 'WebApp123') {
+                    const email = document.getElementById('loginEmail').value;
+                    const safeEmail = email.replace(/[.#$[\]]/g, '_'); 
+                    this.user = { name: document.getElementById('loginName').value, email: email, safeEmail: safeEmail };
+                    
+                    localStorage.setItem('tca_session_v2', JSON.stringify(this.user));
+                    document.getElementById('userNameDisplaySidebar').textContent = this.user.name;
+                    
+                    this.showToast('Autentikasi Berhasil. Memuat Workspace...', false, 'fa-check-circle');
+                    this.navigate('dashboard-screen');
+                    this.loadModule('overview');
+                } else {
+                    this.showToast('Kode Akses Ditolak!', true, 'fa-times-circle');
+                }
+            },
+
+            logout() { 
+                localStorage.removeItem('tca_session_v2'); 
+                location.reload(); 
+            },
+
+            navigate(id) { 
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
+                document.getElementById(id).classList.add('active'); 
+            },
+            
+            showToast(msg, err=false, iconClass='fa-info-circle') { 
+                const t = document.getElementById('toastBox'); 
+                const icon = document.getElementById('toastIcon');
+                
+                document.getElementById('toastMessage').innerText=msg; 
+                t.style.borderLeft = `4px solid ${err ? 'var(--danger)' : 'var(--accent-green)'}`;
+                icon.className = `fas ${iconClass}`;
+                icon.style.color = err ? 'var(--danger)' : 'var(--accent-green)';
+                
+                t.classList.add('show'); 
+                setTimeout(()=>t.classList.remove('show'), 4000); 
+            },
+            
+            showLoading(show) { 
+                document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none'; 
+            },
+
+            async fetchData(endpoint) {
+                if(APPS_SCRIPT_URL.includes("GANTI_DENGAN_URL")) { return null; }
+                const url = `${APPS_SCRIPT_URL}?endpoint=${endpoint}&year=${this.activeYear}&email=${this.user.safeEmail}&_t=${new Date().getTime()}`;
+                try {
+                    const response = await fetch(url);
+                    const data = await response.json();
+                    return data;
+                } catch (error) {
+                    console.error("Gagal menarik data:", error);
+                    return null;
+                }
+            },
+
+            async loadModule(key) {
+                this.activeModule = key;
+                
+                document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+                document.getElementById(`nav-${key}`).classList.add('active');
+                document.getElementById('headerTitle').textContent = this.modules[key].title;
+                
+                if(window.innerWidth <= 768) {
+                    document.getElementById('sidebar').classList.remove('mobile-open');
+                    document.getElementById('mobileOverlay').classList.remove('active');
+                }
+                
+                const container = document.getElementById('contentArea');
+                
+                if (key === 'overview') {
+                    await this.renderPremiumDashboard(container);
+                    return;
+                }
+
+                container.innerHTML = `
+                    <div class="card" style="margin-bottom: 24px;">
+                        <div class="section-header" style="margin-bottom:0;">
+                            <div>
+                                <h2 style="margin-bottom:4px;">Manajemen ${this.modules[key].title}</h2>
+                                <p>Kelola dan perbarui data ${this.modules[key].title.toLowerCase()} Anda di sini.</p>
+                            </div>
+                            <button class="btn" onclick="app.openModal(false)"><i class="fas fa-plus"></i> Tambah Data Baru</button>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="table-responsive">
+                            <table class="data-table" id="dataTable">
+                                <thead><tr id="tableHead"></tr></thead>
+                                <tbody id="tableBody"><tr><td colspan="10" style="text-align:center; padding:40px;">
+                                    <div class="spinner" style="width:30px; height:30px; border-width:2px; margin: 0 auto 10px;"></div>
+                                    Memuat data sinkronisasi...
+                                </td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+
+                const fields = this.modules[key].fields;
+                const thRow = document.getElementById('tableHead');
+                fields.forEach(f => thRow.innerHTML += `<th>${f.label}</th>`);
+                thRow.innerHTML += `<th style="text-align:right;">Tindakan</th>`;
+
+                const data = await this.fetchData(key);
+                
+                // Simpan data di cache memori agar bisa dipakai saat tombol Edit ditekan
+                this.moduleDataCache[key] = data; 
+
+                const tBody = document.getElementById('tableBody');
+                tBody.innerHTML = '';
+
+                if(!data || Object.keys(data).length === 0 || data.error) {
+                    tBody.innerHTML = `<tr><td colspan="${fields.length + 1}" class="empty-state">
+                        <i class="fas ${this.modules[key].icon}"></i>
+                        <h3 style="color:var(--text-primary); margin-bottom:4px;">Belum Ada Data</h3>
+                        <p>Mulai tambahkan data ${this.modules[key].title} pertama Anda.</p>
+                    </td></tr>`;
+                    return;
+                }
+
+                for(let id in data) {
+                    const item = data[id];
+                    let row = `<tr>`;
+                    fields.forEach(f => { 
+                        let val = item[f.id] || '-';
+                        if(f.id === 'status' || f.id === 'prioritas') {
+                            if(val === 'Selesai' || val === 'Published') val = `<span class="badge badge-green">${val}</span>`;
+                            else if(val === 'Tinggi' || val === 'Belum Selesai') val = `<span class="badge badge-red">${val}</span>`;
+                            else val = `<span class="badge badge-yellow">${val}</span>`;
+                        }
+                        if(f.id === 'progress') {
+                            val = `<div style="display:flex; align-items:center; gap:8px;">
+                                    <div style="flex:1; background:rgba(255,255,255,0.1); height:6px; border-radius:3px;">
+                                        <div style="width:${val}%; height:100%; background:var(--accent-green); border-radius:3px;"></div>
+                                    </div>
+                                    <span style="font-size:0.8rem">${val}%</span>
+                                   </div>`;
+                        }
+                        row += `<td>${val}</td>`; 
+                    });
+                    
+                    // MENAMBAHKAN TOMBOL EDIT SEBELUM TOMBOL DELETE
+                    row += `
+                        <td style="text-align:right; min-width: 100px;">
+                            <button class="btn-ghost" onclick="app.editData('${key}', '${id}')" title="Edit Data"><i class="fas fa-edit" style="color:var(--info)"></i></button>
+                            <button class="btn-ghost" onclick="app.deleteData('${key}', '${id}')" title="Hapus Permanen"><i class="fas fa-trash-alt" style="color:var(--danger)"></i></button>
+                        </td>
+                    </tr>`;
+                    tBody.innerHTML += row;
+                }
+            },
+
+            async renderPremiumDashboard(container) {
+                container.innerHTML = `
+                    <div class="dash-grid">
+                        <div class="card col-12 skeleton" style="height: 120px;"></div>
+                        <div class="stat-cards-container col-12">
+                            <div class="card skeleton" style="height: 100px;"></div>
+                            <div class="card skeleton" style="height: 100px;"></div>
+                            <div class="card skeleton" style="height: 100px;"></div>
+                            <div class="card skeleton" style="height: 100px;"></div>
+                        </div>
+                        <div class="col-12" style="display:flex; gap:12px;">
+                            <div class="card skeleton" style="height:80px; flex:1;"></div>
+                            <div class="card skeleton" style="height:80px; flex:1;"></div>
+                            <div class="card skeleton" style="height:80px; flex:1;"></div>
+                        </div>
+                        <div class="card col-8 skeleton" style="height: 300px;"></div>
+                        <div class="card col-4 skeleton" style="height: 300px;"></div>
+                    </div>
+                `;
+
+                try {
+                    const [jadwal, todo, rapat, target, kalender, refleksi, konten] = await Promise.all([
+                        this.fetchData('jadwal'), this.fetchData('todo'), this.fetchData('rapat'),
+                        this.fetchData('target'), this.fetchData('kalender'), this.fetchData('refleksi'), this.fetchData('konten')
+                    ]);
+
+                    // Simpan data di dashboard cache untuk aksi interaktif (To-Do)
+                    this.dashboardDataCache = { jadwal, todo, rapat, target, kalender, refleksi, konten };
+
+                    const safeObjValues = (obj) => obj && !obj.error ? Object.values(obj) : [];
+                    
+                    const jadwalList = safeObjValues(jadwal);
+                    const todoList = safeObjValues(todo);
+                    const rapatList = safeObjValues(rapat);
+                    const targetList = safeObjValues(target);
+                    const kalenderList = safeObjValues(kalender);
+                    const refleksiList = safeObjValues(refleksi);
+                    const kontenList = safeObjValues(konten);
+
+                    const d = new Date();
+                    const dayName = days[d.getDay()];
+                    const jadwalHariIni = jadwalList.filter(j => j.hari === dayName);
+                    jadwalHariIni.sort((a, b) => (a.jam || "").localeCompare(b.jam || ""));
+
+                    const todoAktif = todoList.filter(t => t.status !== 'Selesai');
+                    const todoSelesai = todoList.filter(t => t.status === 'Selesai');
+                    
+                    const todayDateStr = d.toISOString().split('T')[0];
+                    const futureAgendas = rapatList.filter(r => r.tanggal && r.tanggal >= todayDateStr).sort((a,b) => a.tanggal.localeCompare(b.tanggal));
+                    
+                    let totalProgress = 0;
+                    if(targetList.length > 0) {
+                        const sum = targetList.reduce((acc, curr) => acc + (parseInt(curr.progress) || 0), 0);
+                        totalProgress = Math.round(sum / targetList.length);
+                    }
+
+                    let score = 40; 
+                    if(jadwalList.length > 0) score += 10;
+                    if(todoList.length > 0) score += Math.round((todoSelesai.length / todoList.length) * 20);
+                    if(refleksiList.length > 0) score += 10;
+                    if(rapatList.length > 0) score += 10;
+                    if(targetList.length > 0 && totalProgress > 50) score += 10;
+                    score = Math.min(score, 100);
+
+                    let scoreColorClass = 'low';
+                    if(score >= 80) scoreColorClass = 'good';
+                    else if(score >= 50) scoreColorClass = 'avg';
+
+                    let reminders = [];
+                    futureAgendas.forEach(a => reminders.push({ text: `Rapat: ${a.nama}`, date: a.tanggal, type: 'agenda', icon: 'fa-users' }));
+                    kalenderList.filter(k => k.tanggal && k.tanggal >= todayDateStr).forEach(k => reminders.push({ text: `Event: ${k.judul}`, date: k.tanggal, type: 'kalender', icon: 'fa-calendar-day' }));
+                    reminders.sort((a,b) => a.date.localeCompare(b.date));
+                    reminders = reminders.slice(0, 3);
+
+                    const htmlWelcome = `
+                        <div class="card col-12 welcome-header">
+                            <div class="welcome-text">
+                                <h1>Halo, ${this.user.name}</h1>
+                                <p>Selamat datang kembali. Berikut ringkasan aktivitas mengajar Anda hari ini.</p>
+                            </div>
+                            <div class="welcome-avatar">
+                                ${this.user.name.charAt(0).toUpperCase()}
+                            </div>
+                        </div>
+                    `;
+
+                    const htmlSummary = `
+                        <div class="stat-cards-container col-12">
+                            <div class="stat-card">
+                                <div class="stat-icon" style="color: var(--info)"><i class="fas fa-book-open"></i></div>
+                                <div class="stat-info">
+                                    <h4>Jadwal Hari Ini</h4>
+                                    <div class="value">${jadwalHariIni.length}</div>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon" style="color: var(--danger)"><i class="fas fa-list-check"></i></div>
+                                <div class="stat-info">
+                                    <h4>To Do Aktif</h4>
+                                    <div class="value">${todoAktif.length}</div>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon" style="color: var(--warning)"><i class="fas fa-calendar-alt"></i></div>
+                                <div class="stat-info">
+                                    <h4>Agenda Terdekat</h4>
+                                    <div class="value">${futureAgendas.length}</div>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon" style="color: var(--accent-green)"><i class="fas fa-chart-line"></i></div>
+                                <div class="stat-info">
+                                    <h4>Rata-rata Target</h4>
+                                    <div class="value">${totalProgress}%</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    const htmlQuickAction = `
+                        <div class="col-12 card" style="padding:16px;">
+                            <div class="quick-actions-bar">
+                                <button class="action-btn" onclick="app.actionAndOpenModal('jadwal')">
+                                    <i class="fas fa-clock"></i> <span>Tambah Jadwal</span>
+                                </button>
+                                <button class="action-btn" onclick="app.actionAndOpenModal('todo')">
+                                    <i class="fas fa-check-square"></i> <span>Tambah To Do</span>
+                                </button>
+                                <button class="action-btn" onclick="app.actionAndOpenModal('catatan')">
+                                    <i class="fas fa-sticky-note"></i> <span>Buat Catatan</span>
+                                </button>
+                                <button class="action-btn" onclick="app.actionAndOpenModal('rapat')">
+                                    <i class="fas fa-users"></i> <span>Agenda Baru</span>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+
+                    let jadwalRows = '';
+                    if(jadwalHariIni.length === 0) {
+                        jadwalRows = `<div class="empty-state"><i class="fas fa-mug-hot"></i><p>Tidak ada jadwal mengajar hari ini. Waktunya fokus ke tugas lain!</p></div>`;
+                    } else {
+                        jadwalRows = `<div class="schedule-list">`;
+                        jadwalHariIni.forEach(j => {
+                            jadwalRows += `
+                                <div class="schedule-item">
+                                    <div class="schedule-time"><i class="far fa-clock"></i> ${j.jam || '-'}</div>
+                                    <div class="schedule-detail">
+                                        <strong>${j.mapel || 'Mapel tidak diketahui'}</strong>
+                                        <span>Kelas: ${j.kelas || '-'} • Ruang: ${j.ruang || '-'}</span>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        jadwalRows += `</div>`;
+                    }
+
+                    const htmlJadwal = `
+                        <div class="card col-8">
+                            <div class="dash-card-header">
+                                <div class="dash-card-title"><i class="fas fa-chalkboard-teacher" style="color:var(--info)"></i> Jadwal Mengajar (${dayName})</div>
+                                <button class="btn-ghost" onclick="app.loadModule('jadwal')">Lihat Semua</button>
+                            </div>
+                            ${jadwalRows}
+                        </div>
+                    `;
+
+                    let reminderRows = '';
+                    if(reminders.length === 0) {
+                        reminderRows = `<div class="empty-state" style="padding:10px;"><i class="far fa-bell-slash" style="font-size:1.5rem; margin-bottom:5px;"></i><p style="font-size:0.8rem;">Belum ada agenda atau deadline terdekat.</p></div>`;
+                    } else {
+                        reminders.forEach(r => {
+                            const daysDiff = Math.ceil((new Date(r.date) - new Date()) / (1000 * 60 * 60 * 24));
+                            let timeText = daysDiff === 0 ? 'Hari Ini' : daysDiff === 1 ? 'Besok' : `${daysDiff} Hari Lagi`;
+                            if(daysDiff < 0) timeText = 'Terlewat';
+
+                            reminderRows += `
+                                <div class="reminder-item">
+                                    <div class="reminder-icon"><i class="fas ${r.icon}"></i></div>
+                                    <div class="reminder-text">
+                                        ${r.text}
+                                        <span class="reminder-date">⚠ ${timeText} (${r.date})</span>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    }
+
+                    const htmlReminder = `
+                        <div class="card col-4">
+                            <div class="dash-card-header">
+                                <div class="dash-card-title"><i class="fas fa-bell" style="color:var(--warning)"></i> Reminder</div>
+                            </div>
+                            <div style="display:flex; flex-direction:column;">
+                                ${reminderRows}
+                            </div>
+                        </div>
+                    `;
+
+                    const htmlTarget = `
+                        <div class="card col-4">
+                            <div class="dash-card-header">
+                                <div class="dash-card-title"><i class="fas fa-bullseye" style="color:var(--accent-green)"></i> Progress Target</div>
+                            </div>
+                            <div style="text-align:center; padding: 10px 0;">
+                                <h2 style="font-size:2.5rem; color:var(--text-primary); margin-bottom:10px;">${totalProgress}%</h2>
+                                <p>Capaian Target Keseluruhan</p>
+                            </div>
+                            <div class="progress-container">
+                                <div class="progress-track">
+                                    <div class="progress-fill" style="width: 0%;" id="animProgressBar"></div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    let calDaysHtml = '';
+                    for(let i=0; i<7; i++) {
+                        let currDate = new Date();
+                        currDate.setDate(currDate.getDate() - currDate.getDay() + i); 
+                        let isToday = currDate.toDateString() === new Date().toDateString();
+                        
+                        let dateStr = currDate.toISOString().split('T')[0];
+                        let hasEvent = futureAgendas.some(a => a.tanggal === dateStr) || kalenderList.some(k => k.tanggal === dateStr);
+                        
+                        calDaysHtml += `<div class="cal-day ${isToday ? 'today' : ''} ${hasEvent ? 'has-event' : ''}">${currDate.getDate()}</div>`;
+                    }
+
+                    const htmlMiniCal = `
+                        <div class="card col-4">
+                            <div class="dash-card-header">
+                                <div class="dash-card-title"><i class="far fa-calendar-alt" style="color:var(--info)"></i> Kalender Minggu Ini</div>
+                            </div>
+                            <div class="cal-grid">
+                                <div class="cal-day-name">Min</div><div class="cal-day-name">Sen</div><div class="cal-day-name">Sel</div>
+                                <div class="cal-day-name">Rab</div><div class="cal-day-name">Kam</div><div class="cal-day-name">Jum</div><div class="cal-day-name">Sab</div>
+                                ${calDaysHtml}
+                            </div>
+                            <div style="margin-top:15px; text-align:center;">
+                                <button class="btn-ghost" style="font-size:0.8rem;" onclick="app.loadModule('kalender')">Buka Kalender Penuh</button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    const maxStat = Math.max(jadwalList.length, todoList.length, rapatList.length, refleksiList.length, 1);
+                    const calcW = (val) => `${Math.max((val/maxStat)*100, 5)}%`;
+                    
+                    const htmlStats = `
+                        <div class="card col-6">
+                            <div class="dash-card-header">
+                                <div class="dash-card-title"><i class="fas fa-chart-bar" style="color:var(--primary-green)"></i> Statistik Aktivitas</div>
+                            </div>
+                            <div>
+                                <div class="stat-bar-item">
+                                    <div class="stat-bar-label"><span>Jadwal Dibuat</span> <span>${jadwalList.length}</span></div>
+                                    <div class="progress-track" style="height:6px;"><div class="progress-fill" style="width:${calcW(jadwalList.length)}; background:var(--info)"></div></div>
+                                </div>
+                                <div class="stat-bar-item">
+                                    <div class="stat-bar-label"><span>To Do Dicatat</span> <span>${todoList.length}</span></div>
+                                    <div class="progress-track" style="height:6px;"><div class="progress-fill" style="width:${calcW(todoList.length)}; background:var(--danger)"></div></div>
+                                </div>
+                                <div class="stat-bar-item">
+                                    <div class="stat-bar-label"><span>Agenda Direncanakan</span> <span>${rapatList.length}</span></div>
+                                    <div class="progress-track" style="height:6px;"><div class="progress-fill" style="width:${calcW(rapatList.length)}; background:var(--warning)"></div></div>
+                                </div>
+                                <div class="stat-bar-item">
+                                    <div class="stat-bar-label"><span>Refleksi Ditulis</span> <span>${refleksiList.length}</span></div>
+                                    <div class="progress-track" style="height:6px;"><div class="progress-fill" style="width:${calcW(refleksiList.length)}; background:var(--accent-green)"></div></div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    let lastRefleksi = null;
+                    if(refleksiList.length > 0) {
+                        const sortedRef = [...refleksiList].sort((a,b) => (b.tanggal || "").localeCompare(a.tanggal || ""));
+                        lastRefleksi = sortedRef[0];
+                    }
+
+                    const htmlRefleksi = `
+                        <div class="card col-6">
+                            <div class="dash-card-header">
+                                <div class="dash-card-title"><i class="fas fa-brain" style="color:#d946ef"></i> Refleksi Terakhir</div>
+                                <button class="btn-ghost" onclick="app.loadModule('refleksi')">Lihat Semua</button>
+                            </div>
+                            ${lastRefleksi ? `
+                                <div>
+                                    <div style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:8px;">${lastRefleksi.tanggal}</div>
+                                    <p style="color:var(--text-primary); font-style:italic; margin-bottom:12px;">"Hal baik: ${lastRefleksi.baik || '-'}"</p>
+                                    <p style="font-size:0.85rem;"><span style="color:var(--warning)">Perlu perbaikan:</span> ${lastRefleksi.kurang || '-'}</p>
+                                </div>
+                            ` : `<div class="empty-state" style="padding:10px;"><i class="fas fa-pen-fancy" style="font-size:1.5rem; margin-bottom:5px;"></i><p style="font-size:0.8rem;">Belum ada refleksi yang dicatat.</p></div>`}
+                        </div>
+                    `;
+
+                    // FITUR BARU: To-Do Interaktif di Dashboard
+                    let todoQuickRows = '';
+                    // Ambil ID dan data, sort agar yang belum selesai tampil di atas
+                    const todoEntries = todo && !todo.error ? Object.entries(todo) : [];
+                    todoEntries.sort((a,b) => (a[1].status === 'Selesai' ? 1 : -1));
+                    
+                    if(todoEntries.length === 0) {
+                        todoQuickRows = `<div class="empty-state" style="padding:20px 10px;"><i class="far fa-check-circle" style="font-size:2rem; margin-bottom:8px; opacity:0.3;"></i><p style="font-size:0.85rem;">Tidak ada To-Do aktif, santai dulu Cikgu.</p></div>`;
+                    } else {
+                        // Tampilkan 4 tugas teratas
+                        todoEntries.slice(0, 4).forEach(([id, t]) => {
+                            const isDone = t.status === 'Selesai';
+                            todoQuickRows += `
+                                <div class="todo-quick-item ${isDone ? 'done' : ''}">
+                                    <div class="todo-check ${isDone ? 'done' : ''}" onclick="app.toggleTodoStatus('${id}')" title="Tandai Selesai/Belum">
+                                        <i class="${isDone ? 'fas fa-check-circle' : 'far fa-circle'}"></i>
+                                    </div>
+                                    <div class="todo-text" style="flex:1;">
+                                        <strong style="display:block; font-size:0.95rem;">${t.tugas || '-'}</strong>
+                                        <span class="badge ${t.prioritas === 'Tinggi' ? 'badge-red' : (t.prioritas === 'Sedang' ? 'badge-yellow' : 'badge-green')}" style="font-size:0.7rem; padding:2px 6px;">${t.prioritas || '-'}</span>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    }
+
+                    const htmlInteractiveTodo = `
+                        <div class="card col-6">
+                            <div class="dash-card-header">
+                                <div class="dash-card-title"><i class="fas fa-check-square" style="color:var(--danger)"></i> Prioritas To-Do</div>
+                                <button class="btn-ghost" onclick="app.loadModule('todo')">Kelola</button>
+                            </div>
+                            <div style="display:flex; flex-direction:column;">
+                                ${todoQuickRows}
+                            </div>
+                        </div>
+                    `;
+
+                    let htmlIdeKontenRows = '';
+                    if(kontenList.length > 0) {
+                        const latestKonten = kontenList.slice(-3).reverse();
+                        latestKonten.forEach(k => {
+                            htmlIdeKontenRows += `
+                                <div style="display:flex; justify-content:space-between; align-items:center; padding:12px; background:rgba(255,255,255,0.02); border-radius:8px; border:1px solid rgba(255,255,255,0.05);">
+                                    <div style="font-weight:500;">${k.ide}</div>
+                                    <span class="badge ${k.status==='Published'?'badge-green':k.status==='Proses'?'badge-blue':'badge-yellow'}">${k.platform}</span>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        htmlIdeKontenRows = `<div class="empty-state" style="padding:10px;"><p style="font-size:0.85rem;">Belum ada ide konten.</p></div>`;
+                    }
+
+                    // Merubah Ide Konten dari col-8 menjadi col-6 agar pas di grid
+                    const htmlIdeKonten = `
+                        <div class="card col-6" style="display:flex; flex-direction:column;">
+                            <div class="dash-card-header">
+                                <div class="dash-card-title"><i class="fas fa-lightbulb" style="color:var(--warning)"></i> Ide Konten Terbaru</div>
+                                <button class="btn-ghost" onclick="app.loadModule('konten')">Lihat Semua</button>
+                            </div>
+                            <div style="display:flex; flex-direction:column; gap:8px;">
+                                ${htmlIdeKontenRows}
+                            </div>
+                        </div>
+                    `;
+
+                    const htmlScore = `
+                        <div class="card col-4" style="display:flex; flex-direction:column; justify-content:center;">
+                            <div class="dash-card-header" style="margin-bottom:10px; border-bottom:none;">
+                                <div class="dash-card-title"><i class="fas fa-tachometer-alt" style="color:var(--text-secondary)"></i> Prod. Score</div>
+                            </div>
+                            <div class="score-widget">
+                                <div class="score-circle ${scoreColorClass}">
+                                    <span class="score-value">${score}</span>
+                                    <span class="score-max">/ 100</span>
+                                </div>
+                                <p style="font-size:0.8rem; margin-top:8px;">Berdasarkan keaktifan aktivitas & To-Do.</p>
+                            </div>
+                        </div>
+                    `;
+
+                    container.innerHTML = `
+                        <div class="dash-grid">
+                            ${htmlWelcome}
+                            ${htmlSummary}
+                            ${htmlQuickAction}
+                            ${htmlJadwal}
+                            ${htmlReminder}
+                            ${htmlTarget}
+                            ${htmlMiniCal}
+                            ${htmlScore}
+                            ${htmlStats}
+                            ${htmlRefleksi}
+                            ${htmlInteractiveTodo} 
+                            ${htmlIdeKonten}
+                        </div>
+                    `;
+
+                    setTimeout(() => {
+                        const bar = document.getElementById('animProgressBar');
+                        if(bar) bar.style.width = `${totalProgress}%`;
+                    }, 100);
+
+                } catch (error) {
+                    console.error("Dashboard Render Error:", error);
+                    container.innerHTML = `<div class="card col-12"><div class="empty-state"><i class="fas fa-exclamation-triangle" style="color:var(--danger)"></i><h3>Gagal Memuat Dashboard</h3><p>Terjadi kesalahan saat menarik data. Silakan refresh halaman.</p></div></div>`;
+                }
+            },
+
+            async actionAndOpenModal(moduleKey) {
+                await this.loadModule(moduleKey);
+                this.openModal(false);
+            },
+
+            // Parameter isEdit ditambahkan untuk membedakan mode Buat Baru vs Update
+            openModal(isEdit = false) {
+                if(!isEdit) this.editingId = null; // Reset form jika mode "Buat Baru"
+                
+                const mod = this.modules[this.activeModule];
+                document.getElementById('modalTitle').textContent = `${isEdit ? 'Edit Data' : 'Tambah Data'} ${mod.title}`;
+                
+                const form = document.getElementById('modalFormContent');
+                form.innerHTML = '';
+                
+                mod.fields.forEach(f => {
+                    let inputHtml = '';
+                    if(f.type === 'select') {
+                        let opts = f.options.map(o => `<option value="${o}">${o}</option>`).join('');
+                        inputHtml = `<select id="field_${f.id}" class="input-control" required>${opts}</select>`;
+                    } else if (f.type === 'textarea') {
+                        inputHtml = `<textarea id="field_${f.id}" class="input-control" rows="3" required></textarea>`;
+                    } else {
+                        inputHtml = `<input type="${f.type}" id="field_${f.id}" class="input-control" required>`;
+                    }
+                    form.innerHTML += `<div class="input-group"><label>${f.label}</label>${inputHtml}</div>`;
+                });
+                
+                document.getElementById('formModalOverlay').classList.add('active');
+            },
+
+            closeModal() { 
+                document.getElementById('formModalOverlay').classList.remove('active'); 
+                document.getElementById('dynamicForm').reset(); 
+                this.editingId = null; // Clean up
+            },
+
+            // FUNGSI BARU UNTUK MENGISI FORM EDIT
+            editData(key, id) {
+                this.activeModule = key;
+                this.openModal(true); // Buka modal dalam mode Edit
+                this.editingId = id;  // Set ID yang sedang diedit setelah modal disiapkan
+                
+                // Ambil data lama dari cache berdasarkan ID
+                const item = this.moduleDataCache[key][id]; 
+                
+                // Isi form otomatis dengan data lama
+                if(item) {
+                    this.modules[key].fields.forEach(f => {
+                        const el = document.getElementById(`field_${f.id}`);
+                        if(el) el.value = item[f.id] || '';
+                    });
+                }
+            },
+
+            // MENGUBAH FUNGSI SAVEDATA AGAR BISA HANDLE CREATE DAN UPDATE
+            async saveData(e) {
+                e.preventDefault();
+                const mod = this.modules[this.activeModule];
+                let payload = {};
+                
+                mod.fields.forEach(f => { payload[f.id] = document.getElementById(`field_${f.id}`).value; });
+                
+                // Cek mode: jika ada editingId maka ini operasi Update, jika null maka Create
+                const isUpdate = this.editingId !== null; 
+                const actionParam = isUpdate ? 'update' : 'create';
+                const idParam = isUpdate ? `&id=${this.editingId}` : '';
+
+                this.closeModal();
+                this.showLoading(true);
+                
+                // Memanggil endpoint backend tanpa mengubah struktur URL asli
+                const url = `${APPS_SCRIPT_URL}?endpoint=${this.activeModule}&year=${this.activeYear}&email=${this.user.safeEmail}&action=${actionParam}${idParam}`;
+                try {
+                    await fetch(url, { method: 'POST', body: JSON.stringify(payload) });
+                    this.showLoading(false);
+                    this.showToast(isUpdate ? 'Data berhasil diperbarui!' : 'Data berhasil ditambahkan!');
+                    this.loadModule(this.activeModule); 
+                } catch(err) {
+                    this.showLoading(false);
+                    this.showToast('Koneksi Gagal. Coba lagi.', true, 'fa-wifi');
+                }
+            },
+
+            // FITUR BARU: MENGUBAH STATUS TO-DO LANGSUNG DARI DASHBOARD
+            async toggleTodoStatus(id) {
+                if(!this.dashboardDataCache.todo || !this.dashboardDataCache.todo[id]) return;
+                
+                const todoItem = this.dashboardDataCache.todo[id];
+                // Toggle status secara optimistik
+                const newStatus = todoItem.status === 'Selesai' ? 'Belum Selesai' : 'Selesai';
+                todoItem.status = newStatus;
+                
+                this.showLoading(true);
+                
+                const url = `${APPS_SCRIPT_URL}?endpoint=todo&year=${this.activeYear}&email=${this.user.safeEmail}&action=update&id=${id}`;
+                try {
+                    // Mengirim payload penuh yang statusnya sudah diubah
+                    await fetch(url, { method: 'POST', body: JSON.stringify(todoItem) });
+                    this.showLoading(false);
+                    this.showToast(newStatus === 'Selesai' ? 'Hebat! Satu To-Do selesai!' : 'To-Do dikembalikan ke Belum Selesai', false, 'fa-check-circle');
+                    
+                    // Muat ulang dashboard untuk merefleksikan score produktivitas dan urutan list
+                    this.loadModule('overview'); 
+                } catch(e) {
+                    this.showLoading(false);
+                    this.showToast('Gagal mengubah status', true, 'fa-times');
+                }
+            },
+
+            async deleteData(endpoint, id) {
+                const overlay = document.getElementById('confirmModalOverlay');
+                const cancelBtn = document.getElementById('confirmCancelBtn');
+                const confirmBtn = document.getElementById('confirmActionBtn');
+                
+                overlay.classList.add('active');
+                
+                cancelBtn.onclick = () => {
+                    overlay.classList.remove('active');
+                };
+                
+                confirmBtn.onclick = async () => {
+                    overlay.classList.remove('active');
+                    this.showLoading(true);
+                    
+                    const url = `${APPS_SCRIPT_URL}?endpoint=${endpoint}&year=${this.activeYear}&email=${this.user.safeEmail}&action=delete&id=${id}`;
+                    try {
+                        await fetch(url, { method: 'POST' });
+                        this.showLoading(false);
+                        this.showToast('Data berhasil dihapus.', false, 'fa-trash');
+                        this.loadModule(this.activeModule); 
+                    } catch(e) {
+                        this.showLoading(false);
+                        this.showToast('Gagal menghapus data.', true, 'fa-exclamation-circle');
+                    }
+                };
+            }
+        };
+
+        window.onload = () => app.init();
+    </script>
+</body>
+</html>
