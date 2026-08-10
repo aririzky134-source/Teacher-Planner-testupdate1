@@ -446,7 +446,7 @@
 
     <script>
         // --- KONFIGURASI BACKEND & STORAGE ---
-        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyinwC0QxxNLzT-K1pBcmsSOqu_Ft5q_5y-8LkKEHmfH7wnC-iQkikywVJYJtOZaezC/exec"; 
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby5-suigC_eL4iJROUYWrm2faYuCY_pBWmcznv-jzfU_g7bNc0nfvlNHbJ11Rr87GE/exec"; 
         
         // PENTING: ISI CLOUDINARY CONFIG DI BAWAH INI UNTUK UPLOAD GAMBAR DARI FRONTEND
         const CLOUDINARY_CLOUD_NAME = "uzf6yunx"; 
@@ -1561,32 +1561,36 @@
                     overlay.classList.remove('active');
                 };
                 
+                // MENGATASI BAGIAN FUNGSI YANG TERPOTONG DI KODE SEBELUMNYA
                 confirmBtn.onclick = async () => {
                     overlay.classList.remove('active');
                     this.showLoading(true);
                     
                     const storageKey = `tca_mock_${this.user.safeEmail}_${this.activeYear}_${endpoint}`;
                     let currentCache = JSON.parse(localStorage.getItem(storageKey) || "{}");
-                    if (currentCache[id]) {
-                        delete currentCache[id];
-                        localStorage.setItem(storageKey, JSON.stringify(currentCache));
-                    }
+                    
+                    // 1. Hapus dari LocalStorage 
+                    delete currentCache[id];
+                    localStorage.setItem(storageKey, JSON.stringify(currentCache));
 
+                    // 2. Kirim perintah DELETE ke Code.gs
                     const url = `${APPS_SCRIPT_URL}?endpoint=${endpoint}&year=${this.activeYear}&email=${this.user.safeEmail}&action=delete&id=${id}`;
+                    
                     try {
                         await fetch(url, { method: 'POST', mode: 'cors' });
-                    } catch(e) {
-                        console.warn("Remote delete failed, deleted locally.");
+                    } catch(netErr) {
+                        console.warn("Disinkronkan secara lokal karena server tidak bisa diakses.");
                     }
-
+                    
                     this.showLoading(false);
-                    this.showToast('Data berhasil dihapus.', false, 'fa-trash');
+                    this.showToast('Data berhasil dihapus!');
                     this.loadModule(this.activeModule); 
                 };
             }
         };
 
-        window.onload = () => app.init();
+        // Inisialisasi Aplikasi Saat Halaman Dimuat
+        app.init();
     </script>
 </body>
 </html>
