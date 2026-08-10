@@ -446,12 +446,11 @@
 
     <script>
         // --- KONFIGURASI BACKEND & STORAGE ---
-        // URL Google Apps Script Anda (Sama seperti versi asli yang mengakses Firebase)
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyinwC0QxxNLzT-K1pBcmsSOqu_Ft5q_5y-8LkKEHmfH7wnC-iQkikywVJYJtOZaezC/exec"; 
         
         // PENTING: ISI CLOUDINARY CONFIG DI BAWAH INI UNTUK UPLOAD GAMBAR DARI FRONTEND
-        const CLOUDINARY_CLOUD_NAME = "uzf6yunx"; // Ganti dengan Cloud Name Cloudinary Anda
-        const CLOUDINARY_UPLOAD_PRESET = "teacher_planner_upload"; // Ganti dengan nama Unsigned Upload Preset Anda
+        const CLOUDINARY_CLOUD_NAME = "uzf6yunx"; 
+        const CLOUDINARY_UPLOAD_PRESET = "teacher_planner_upload"; 
         const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
         // -------------------------------------
 
@@ -470,7 +469,7 @@
             editingId: null, 
             moduleDataCache: {}, 
             dashboardDataCache: {}, 
-            compressedFiles: {}, // State untuk menyimpan hasil kompresi file
+            compressedFiles: {},
 
             modules: {
                 overview: { icon: 'fa-table-cells-large', title: 'Dasboard', render: 'custom' },
@@ -520,7 +519,6 @@
                             let width = img.width;
                             let height = img.height;
 
-                            // Kalkulasi ukuran baru jika melebihi batas (Maks 1600px) tanpa upscale
                             if (width > maxSize || height > maxSize) {
                                 if (width > height) {
                                     height = Math.round((height * maxSize) / width);
@@ -542,7 +540,6 @@
                                     reject(new Error("Gagal mengompres gambar"));
                                     return;
                                 }
-                                // Ubah format ke WebP untuk ukuran optimal
                                 const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".webp", { type: "image/webp" });
                                 resolve({
                                     originalSize: file.size,
@@ -568,9 +565,15 @@
                 }
                 if (!file.type.startsWith('image/')) {
                     previewEl.innerHTML = '<span style="color:var(--danger); font-size:0.8rem;">Hanya file gambar yang diperbolehkan.</span>';
-                    e.target.value = ''; // Reset input
+                    e.target.value = ''; 
                     return;
                 }
+
+                // Hapus data/info field lama jika user memilih file baru
+                const oldInput = document.getElementById(`field_old_${fieldId}`);
+                if (oldInput) oldInput.value = '';
+                const oldPublicIdInput = document.getElementById(`field_old_${fieldId}PublicId`);
+                if (oldPublicIdInput) oldPublicIdInput.value = '';
 
                 previewEl.innerHTML = '<span style="font-size:0.8rem; color:var(--info);"><i class="fas fa-spinner fa-spin"></i> Mengompresi gambar...</span>';
 
@@ -585,6 +588,22 @@
                 }
             },
 
+            removeOldFile(fieldId) {
+                const hiddenEl = document.getElementById(`field_old_${fieldId}`);
+                if (hiddenEl) hiddenEl.value = ''; 
+                const hiddenPublicIdEl = document.getElementById(`field_old_${fieldId}PublicId`);
+                if (hiddenPublicIdEl) hiddenPublicIdEl.value = ''; 
+                
+                const previewContainer = document.getElementById(`file_preview_container_${fieldId}`);
+                if (previewContainer) {
+                    previewContainer.innerHTML = '<span style="font-size:0.85rem; color:var(--warning);"><i class="fas fa-info-circle"></i> Foto lama akan dihapus saat disimpan.</span>';
+                }
+                
+                const fileInput = document.getElementById(`field_${fieldId}`);
+                if (fileInput) fileInput.value = '';
+                delete this.compressedFiles[fieldId];
+            },
+
             showLightbox(url) {
                 document.getElementById('lightboxImage').src = url;
                 document.getElementById('lightboxOverlay').classList.add('active');
@@ -592,7 +611,7 @@
             
             closeLightbox() {
                 document.getElementById('lightboxOverlay').classList.remove('active');
-                setTimeout(() => document.getElementById('lightboxImage').src = '', 300); // Bersihkan cache foto setelah transisi selesai
+                setTimeout(() => document.getElementById('lightboxImage').src = '', 300);
             },
             // ----------------------------------
 
@@ -793,9 +812,7 @@
                             else val = `<span class="badge badge-yellow">${val}</span>`;
                             
                         } else if(f.type === 'file') {
-                            // KOMPATIBILITAS BACKWARD GOOGLE DRIVE & CLOUDINARY
                             if(val && val !== '-') {
-                                // Jika URL Cloudinary, gunakan langsung. Jika tidak (ID lawas), jadikan link Google Drive.
                                 let fileUrl = val.startsWith('http') ? val : `https://drive.google.com/uc?id=${val}`;
                                 val = `<button type="button" class="btn-ghost" onclick="app.showLightbox('${fileUrl}')" style="padding: 4px 8px; font-size: 0.8rem; background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; border-radius: 4px; display:inline-flex; align-items:center; gap:4px;"><i class="fas fa-image"></i> Lihat Foto</button>`;
                             } else {
@@ -836,44 +853,17 @@
             },
 
             async renderPremiumDashboard(container) {
-                container.innerHTML = `
-                    <div class="dash-grid">
-                        <div class="card col-12 skeleton" style="height: 120px;"></div>
-                        <div class="stat-cards-container col-12">
-                            <div class="card skeleton" style="height: 100px;"></div>
-                            <div class="card skeleton" style="height: 100px;"></div>
-                            <div class="card skeleton" style="height: 100px;"></div>
-                            <div class="card skeleton" style="height: 100px;"></div>
-                        </div>
-                        <div class="col-12" style="display:flex; gap:12px;">
-                            <div class="card skeleton" style="height:80px; flex:1;"></div>
-                            <div class="card skeleton" style="height:80px; flex:1;"></div>
-                            <div class="card skeleton" style="height:80px; flex:1;"></div>
-                        </div>
-                        <div class="card col-8 skeleton" style="height: 300px;"></div>
-                        <div class="card col-4 skeleton" style="height: 300px;"></div>
-                    </div>
-                `;
-
-                try {
-                    const [jadwal, todo, rapat, target, kalender, refleksi, konten] = await Promise.all([
-                        this.fetchData('jadwal'), this.fetchData('todo'), this.fetchData('rapat'),
-                        this.fetchData('target'), this.fetchData('kalender'), this.fetchData('refleksi'), this.fetchData('konten')
-                    ]);
-                    
-                    if (this.activeModule !== 'overview') return;
-
-                    this.dashboardDataCache = { jadwal, todo, rapat, target, kalender, refleksi, konten };
-
+                // FUNGSI HELPER UNTUK MENGHASILKAN UI (Pemisahan Logika & Tampilan untuk optimasi render)
+                const renderUI = (dataCache) => {
                     const safeObjValues = (obj) => obj && !obj.error ? Object.values(obj) : [];
                     
-                    const jadwalList = safeObjValues(jadwal);
-                    const todoList = safeObjValues(todo);
-                    const rapatList = safeObjValues(rapat);
-                    const targetList = safeObjValues(target);
-                    const kalenderList = safeObjValues(kalender);
-                    const refleksiList = safeObjValues(refleksi);
-                    const kontenList = safeObjValues(konten);
+                    const jadwalList = safeObjValues(dataCache.jadwal);
+                    const todoList = safeObjValues(dataCache.todo);
+                    const rapatList = safeObjValues(dataCache.rapat);
+                    const targetList = safeObjValues(dataCache.target);
+                    const kalenderList = safeObjValues(dataCache.kalender);
+                    const refleksiList = safeObjValues(dataCache.refleksi);
+                    const kontenList = safeObjValues(dataCache.konten);
 
                     const d = new Date();
                     const dayName = days[d.getDay()];
@@ -1151,7 +1141,7 @@
                     `;
 
                     let todoQuickRows = '';
-                    const todoEntries = todo && !todo.error ? Object.entries(todo) : [];
+                    const todoEntries = dataCache.todo && !dataCache.todo.error ? Object.entries(dataCache.todo) : [];
                     todoEntries.sort((a,b) => (a[1].status === 'Selesai' ? 1 : -1));
                     
                     if(todoEntries.length === 0) {
@@ -1256,10 +1246,79 @@
                         const bar = document.getElementById('animProgressBar');
                         if(bar) bar.style.width = `${totalProgress}%`;
                     }, 100);
+                };
+
+                // OPTIMASI RENDER: Cek Memory Cache atau LocalStorage
+                const hasMemoryCache = Object.keys(this.dashboardDataCache).length > 0;
+                
+                if (hasMemoryCache) {
+                    // Render instan dari memory
+                    renderUI(this.dashboardDataCache);
+                } else {
+                    // Coba render instan dari local storage jika baru dibuka (Refresh page)
+                    let localDash = {};
+                    ['jadwal', 'todo', 'rapat', 'target', 'kalender', 'refleksi', 'konten'].forEach(ep => {
+                        const sk = `tca_mock_${this.user.safeEmail}_${this.activeYear}_${ep}`;
+                        const str = localStorage.getItem(sk);
+                        if (str) localDash[ep] = JSON.parse(str);
+                    });
+                    
+                    const hasLocalCache = Object.values(localDash).some(v => v && Object.keys(v).length > 0);
+                    
+                    if (hasLocalCache) {
+                        this.dashboardDataCache = localDash;
+                        renderUI(this.dashboardDataCache);
+                    } else {
+                        // Jika tidak ada data sama sekali, tampilkan efek Skeleton
+                        container.innerHTML = `
+                            <div class="dash-grid">
+                                <div class="card col-12 skeleton" style="height: 120px;"></div>
+                                <div class="stat-cards-container col-12">
+                                    <div class="card skeleton" style="height: 100px;"></div>
+                                    <div class="card skeleton" style="height: 100px;"></div>
+                                    <div class="card skeleton" style="height: 100px;"></div>
+                                    <div class="card skeleton" style="height: 100px;"></div>
+                                </div>
+                                <div class="col-12" style="display:flex; gap:12px;">
+                                    <div class="card skeleton" style="height:80px; flex:1;"></div>
+                                    <div class="card skeleton" style="height:80px; flex:1;"></div>
+                                    <div class="card skeleton" style="height:80px; flex:1;"></div>
+                                </div>
+                                <div class="card col-8 skeleton" style="height: 300px;"></div>
+                                <div class="card col-4 skeleton" style="height: 300px;"></div>
+                            </div>
+                        `;
+                    }
+                }
+
+                // SYNCHRONIZATION DI BACKGROUND (Diam-diam menarik data terbaru tanpa loading layr penuh)
+                try {
+                    const [jadwal, todo, rapat, target, kalender, refleksi, konten] = await Promise.all([
+                        this.fetchData('jadwal'), this.fetchData('todo'), this.fetchData('rapat'),
+                        this.fetchData('target'), this.fetchData('kalender'), this.fetchData('refleksi'), this.fetchData('konten')
+                    ]);
+                    
+                    // Pastikan pengguna belum pindah ke menu lain saat data tiba
+                    if (this.activeModule !== 'overview') return;
+
+                    const newData = { jadwal, todo, rapat, target, kalender, refleksi, konten };
+                    
+                    // Cek apakah data terbaru berbeda dengan yang sedang dirender
+                    const newDataStr = JSON.stringify(newData);
+                    const oldDataStr = JSON.stringify(this.dashboardDataCache);
+                    
+                    // Render ulang hanya jika ada perubahan (menghindari kedipan layar yang tak perlu)
+                    if (newDataStr !== oldDataStr || (!hasMemoryCache && !Object.keys(this.dashboardDataCache).length)) {
+                        this.dashboardDataCache = newData;
+                        renderUI(this.dashboardDataCache);
+                    }
 
                 } catch (error) {
-                    console.error("Dashboard Render Error:", error);
-                    container.innerHTML = `<div class="card col-12"><div class="empty-state"><i class="fas fa-exclamation-triangle" style="color:var(--danger)"></i><h3>Gagal Memuat Dashboard</h3><p>Terjadi kesalahan saat menarik data. Silakan refresh halaman.</p></div></div>`;
+                    console.error("Dashboard Background Sync Error:", error);
+                    // Jangan timpa tampilan error jika UI sudah dirender dari Cache (Biarkan cache hidup)
+                    if (!hasMemoryCache && !document.querySelector('.welcome-header')) {
+                        container.innerHTML = `<div class="card col-12"><div class="empty-state"><i class="fas fa-exclamation-triangle" style="color:var(--danger)"></i><h3>Gagal Memuat Dashboard</h3><p>Terjadi kesalahan saat menarik data. Silakan refresh halaman.</p></div></div>`;
+                    }
                 }
             },
 
@@ -1270,7 +1329,7 @@
 
             openModal(isEdit = false) {
                 if(!isEdit) this.editingId = null; 
-                this.compressedFiles = {}; // Reset state compressed files
+                this.compressedFiles = {}; 
                 
                 const mod = this.modules[this.activeModule];
                 document.getElementById('modalTitle').textContent = `${isEdit ? 'Edit Data' : 'Tambah Data'} ${mod.title}`;
@@ -1291,6 +1350,7 @@
                         inputHtml = `<input type="file" id="field_${f.id}" class="input-control" accept="image/*" onchange="app.handleFileSelect(event, '${f.id}')" ${isReq}>`;
                         inputHtml += `<div id="preview_${f.id}" style="margin-top: 8px;"></div>`;
                         inputHtml += `<input type="hidden" id="field_old_${f.id}">`;
+                        inputHtml += `<input type="hidden" id="field_old_${f.id}PublicId">`;
                     } else if (f.type === 'range') {
                         inputHtml = `<div style="display:flex; align-items:center; gap: 10px;">
                             <input type="range" id="field_${f.id}" class="input-control" min="0" max="100" step="5" value="0" oninput="document.getElementById('val_${f.id}').textContent = this.value + '%'" style="flex: 1; padding: 0;">
@@ -1333,14 +1393,31 @@
                             }
                         }
                         
-                        // KOMPATIBILITAS FILE LAMA vs BARU SAAT MODE EDIT
+                        // MENANGANI DATA FOTO LAMA
                         if(f.type === 'file') {
                             const hiddenEl = document.getElementById(`field_old_${f.id}`);
                             if (hiddenEl) hiddenEl.value = item[f.id] || '';
+                            const hiddenPublicIdEl = document.getElementById(`field_old_${f.id}PublicId`);
+                            if (hiddenPublicIdEl) hiddenPublicIdEl.value = item[`${f.id}PublicId`] || '';
+
                             const previewEl = document.getElementById(`preview_${f.id}`);
-                            if (previewEl && item[f.id]) {
+                            
+                            if (previewEl && item[f.id] && item[f.id] !== '-') {
                                 let fileUrl = item[f.id].startsWith('http') ? item[f.id] : `https://drive.google.com/uc?id=${item[f.id]}`;
-                                previewEl.innerHTML = `<button type="button" class="btn-ghost" onclick="app.showLightbox('${fileUrl}')" style="font-size: 0.8rem; color: var(--accent-green); text-decoration: underline; padding:0;"><i class="fas fa-check"></i> File terlampir (Klik untuk lihat). Biarkan kosong jika tidak ingin mengubah.</button>`;
+                                previewEl.innerHTML = `
+                                    <div id="file_preview_container_${f.id}" style="display:flex; flex-direction:column; gap:8px; margin-top:8px; background:#f9fafb; padding:10px; border-radius:8px; border:1px solid #e5e7eb;">
+                                        <div style="display:flex; align-items:center; gap:8px;">
+                                            <i class="fas fa-image" style="color:var(--info);"></i>
+                                            <span style="font-size:0.85rem; flex:1; color:var(--text-secondary);">File saat ini terlampir</span>
+                                        </div>
+                                        <div style="display:flex; gap:8px;">
+                                            <button type="button" class="btn-ghost" onclick="app.showLightbox('${fileUrl}')" style="font-size: 0.8rem; background:#e0f2fe; color:#0284c7; padding:4px 8px; border-radius:4px;"><i class="fas fa-eye"></i> Lihat</button>
+                                            <button type="button" class="btn-ghost" onclick="app.removeOldFile('${f.id}')" style="font-size: 0.8rem; background:#ffe4e6; color:#e11d48; padding:4px 8px; border-radius:4px;"><i class="fas fa-trash"></i> Hapus Foto</button>
+                                        </div>
+                                    </div>
+                                `;
+                            } else if (previewEl) {
+                                previewEl.innerHTML = '';
                             }
                         }
                     });
@@ -1349,6 +1426,11 @@
 
             async saveData(e) {
                 e.preventDefault();
+                
+                // MENGAMANKAN ID LAMA: Cegah Bug Data Baru
+                const isUpdate = this.editingId !== null; 
+                const currentEditingId = this.editingId; 
+                
                 const mod = this.modules[this.activeModule];
                 let payload = {};
                 let filesToUpload = [];
@@ -1356,17 +1438,18 @@
                 mod.fields.forEach(f => { 
                     if (f.type === 'file') {
                         const fileInput = document.getElementById(`field_${f.id}`);
-                        // Prioritaskan file hasil kompresi jika ada
+                        
+                        // Prioritaskan file baru (Baik kompresi maupun asli)
                         if (this.compressedFiles[f.id]) {
                             filesToUpload.push({ fieldId: f.id, file: this.compressedFiles[f.id] });
                         } else if (fileInput && fileInput.files.length > 0) {
-                            // Fallback cadangan jikalau proses kompresi entah mengapa gagal tetapi user memaksa submit
                             filesToUpload.push({ fieldId: f.id, file: fileInput.files[0] });
                         } else {
-                             const oldFileId = document.getElementById(`field_old_${f.id}`)?.value;
-                             if (oldFileId) {
-                                 payload[f.id] = oldFileId;
-                             }
+                             // Jika tidak ada upload, ambil data dari hidden field (Bisa berupa URL lama, atau kosong jika telah dihapus user)
+                             const oldFileUrl = document.getElementById(`field_old_${f.id}`)?.value;
+                             const oldFilePublicId = document.getElementById(`field_old_${f.id}PublicId`)?.value;
+                             payload[f.id] = oldFileUrl || ''; 
+                             payload[f.id + 'PublicId'] = oldFilePublicId || '';
                         }
                     } else {
                         const el = document.getElementById(`field_${f.id}`);
@@ -1376,11 +1459,10 @@
                     }
                 });
                 
-                this.closeModal();
                 this.showLoading(true);
 
                 try {
-                    // UPLOAD GAMBAR LANGSUNG KE CLOUDINARY DARI FRONTEND
+                    // UPLOAD GAMBAR BARU JIKA ADA
                     for (let item of filesToUpload) {
                         const formData = new FormData();
                         formData.append('file', item.file);
@@ -1394,36 +1476,40 @@
                             
                             const uploadData = await uploadRes.json();
                             if (uploadData.secure_url) {
-                                // Simpan hanya URL-nya saja ke RTDB
-                                payload[item.fieldId] = uploadData.secure_url;
+                                payload[item.fieldId] = uploadData.secure_url; // Ganti URL lama
+                                payload[item.fieldId + 'PublicId'] = uploadData.public_id; // Simpan public_id baru
                             } else {
                                 throw new Error("Gagal mengunggah gambar ke Cloudinary.");
                             }
                         } catch(err) {
-                            throw new Error("Koneksi ke Cloudinary gagal. Cek preset Anda.");
+                            throw new Error("Koneksi Upload Foto Gagal. Cek setting Cloudinary Anda.");
                         }
                     }
 
-                    const isUpdate = this.editingId !== null; 
+                    // TUTUP MODAL HANYA JIKA UPLOAD FILE BERHASIL 
+                    // (Jika gagal, modal dibiarkan tetap terbuka)
+                    this.closeModal();
+
                     const storageKey = `tca_mock_${this.user.safeEmail}_${this.activeYear}_${this.activeModule}`;
                     let currentCache = JSON.parse(localStorage.getItem(storageKey) || "{}");
 
                     if (isUpdate) {
-                        currentCache[this.editingId] = payload;
+                        currentCache[currentEditingId] = payload; // Update Object di LocalStorage dengan ID lama
                     } else {
                         const newId = 'id_' + Date.now();
                         currentCache[newId] = payload;
                     }
                     localStorage.setItem(storageKey, JSON.stringify(currentCache));
 
-                    // SIMPAN DATA KE FIREBASE MENGGUNAKAN CODE.GS LAMA
+                    // PUSH KE FIREBASE RTDB DENGAN CODE.GS 
+                    const actionParam = isUpdate ? 'update' : 'create';
+                    const idParam = isUpdate ? `&id=${currentEditingId}` : '';
+                    const url = `${APPS_SCRIPT_URL}?endpoint=${this.activeModule}&year=${this.activeYear}&email=${this.user.safeEmail}&action=${actionParam}${idParam}`;
+                    
                     try {
-                        const actionParam = isUpdate ? 'update' : 'create';
-                        const idParam = isUpdate ? `&id=${this.editingId}` : '';
-                        const url = `${APPS_SCRIPT_URL}?endpoint=${this.activeModule}&year=${this.activeYear}&email=${this.user.safeEmail}&action=${actionParam}${idParam}`;
                         await fetch(url, { method: 'POST', body: JSON.stringify(payload), mode: 'cors' });
                     } catch(netErr) {
-                        console.warn("Synced locally, remote server unreachable.");
+                        console.warn("Disinkronkan secara lokal karena server tidak bisa diakses.");
                     }
                     
                     this.showLoading(false);
