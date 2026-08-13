@@ -613,6 +613,7 @@
                 document.getElementById('lightboxOverlay').classList.remove('active');
                 setTimeout(() => document.getElementById('lightboxImage').src = '', 300);
             },
+            
             // ----------------------------------
 
             init() {
@@ -657,9 +658,17 @@
                 e.preventDefault();
                 const code = document.getElementById('loginCode').value;
                 if(code === 'TCA2026' || code === 'WebApp123' || code === '') {
-                    const email = document.getElementById('loginEmail').value;
-                    const safeEmail = email.replace(/[.#$[\]]/g, '_'); 
-                    this.user = { name: document.getElementById('loginName').value, email: email, safeEmail: safeEmail };
+                    
+                    // PERBAIKAN: Menghindari duplikasi email karena perbedaan spasi/huruf kapital
+                    const rawEmail = document.getElementById('loginEmail').value;
+                    const cleanEmail = String(rawEmail).toLowerCase().trim();
+                    const safeEmail = cleanEmail.replace(/[.#$[\]]/g, '_'); 
+                    
+                    this.user = { 
+                        name: document.getElementById('loginName').value, 
+                        email: cleanEmail, 
+                        safeEmail: safeEmail 
+                    };
                     
                     localStorage.setItem('tca_session_v2', JSON.stringify(this.user));
                     document.getElementById('userNameDisplaySidebar').textContent = this.user.name;
@@ -705,6 +714,7 @@
                 document.getElementById('detailModalOverlay').classList.add('active');
             },
 
+            // FIX: Menggunakan POST dengan action=read untuk menghindari pemblokiran CORS saat redirect GET dari Apps Script
             async fetchData(endpoint) {
                 const storageKey = `tca_mock_${this.user.safeEmail}_${this.activeYear}_${endpoint}`;
                 const localData = localStorage.getItem(storageKey);
@@ -713,16 +723,47 @@
                     return localData ? JSON.parse(localData) : {};
                 }
 
-                const url = `${APPS_SCRIPT_URL}?endpoint=${endpoint}&year=${this.activeYear}&email=${this.user.safeEmail}&_t=${new Date().getTime()}`;
+                const url = `${APPS_SCRIPT_URL}?endpoint=${endpoint}&year=${this.activeYear}&email=${this.user.safeEmail}&action=read&_t=${new Date().getTime()}`;
                 try {
-                    const response = await fetch(url, { method: 'GET', mode: 'cors' });
+                    const response = await fetch(url, { method: 'POST', mode: 'cors' });
                     if (!response.ok) throw new Error("Network response was not ok");
                     const data = await response.json();
+                    
+                    if (data && data.error) {
+                        console.error("Backend error:", data.error);
+                        return localData ? JSON.parse(localData) : {};
+                    }
+                    
                     localStorage.setItem(storageKey, JSON.stringify(data || {}));
-                    return data;
+                    return data || {};
                 } catch (error) {
                     console.warn("Using local storage fallback due to network/CORS error:", error);
                     return localData ? JSON.parse(localData) : {};
+                }
+            },
+
+            // FITUR BARU: Tarik semua data sekaligus untuk optimasi Dashboard (Mencegah Rate Limit Apps Script)
+            async fetchAllData() {
+                if (APPS_SCRIPT_URL.includes("GANTI_DENGAN_URL")) return null;
+                
+                const url = `${APPS_SCRIPT_URL}?year=${this.activeYear}&email=${this.user.safeEmail}&action=readAll&_t=${new Date().getTime()}`;
+                try {
+                    const response = await fetch(url, { method: 'POST', mode: 'cors' });
+                    if (!response.ok) throw new Error("Network response was not ok");
+                    const data = await response.json();
+                    
+                    if (data && data.error) throw new Error(data.error);
+                    
+                    if (data) {
+                        ['jadwal', 'todo', 'rapat', 'target', 'kalender', 'refleksi', 'konten'].forEach(ep => {
+                            const epKey = `tca_mock_${this.user.safeEmail}_${this.activeYear}_${ep}`;
+                            localStorage.setItem(epKey, JSON.stringify(data[ep] || {}));
+                        });
+                    }
+                    return data || {};
+                } catch (error) {
+                    console.error("Fetch All Data Error:", error);
+                    return null; 
                 }
             },
 
@@ -1293,16 +1334,31 @@
 
                 // SYNCHRONIZATION DI BACKGROUND (Diam-diam menarik data terbaru tanpa loading layr penuh)
                 try {
-                    const [jadwal, todo, rapat, target, kalender, refleksi, konten] = await Promise.all([
-                        this.fetchData('jadwal'), this.fetchData('todo'), this.fetchData('rapat'),
-                        this.fetchData('target'), this.fetchData('kalender'), this.fetchData('refleksi'), this.fetchData('konten')
-                    ]);
+                    let newData = {};
+                    const allData = await this.fetchAllData();
+                    
+                    if (allData) {
+                        newData = {
+                            jadwal: allData.jadwal || {},
+                            todo: allData.todo || {},
+                            rapat: allData.rapat || {},
+                            target: allData.target || {},
+                            kalender: allData.kalender || {},
+                            refleksi: allData.refleksi || {},
+                            konten: allData.konten || {}
+                        };
+                    } else {
+                        // Fallback ke sequential load kalau batch fail
+                        const [jadwal, todo, rapat, target, kalender, refleksi, konten] = await Promise.all([
+                            this.fetchData('jadwal'), this.fetchData('todo'), this.fetchData('rapat'),
+                            this.fetchData('target'), this.fetchData('kalender'), this.fetchData('refleksi'), this.fetchData('konten')
+                        ]);
+                        newData = { jadwal, todo, rapat, target, kalender, refleksi, konten };
+                    }
                     
                     // Pastikan pengguna belum pindah ke menu lain saat data tiba
                     if (this.activeModule !== 'overview') return;
 
-                    const newData = { jadwal, todo, rapat, target, kalender, refleksi, konten };
-                    
                     // Cek apakah data terbaru berbeda dengan yang sedang dirender
                     const newDataStr = JSON.stringify(newData);
                     const oldDataStr = JSON.stringify(this.dashboardDataCache);
