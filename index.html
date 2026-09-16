@@ -180,6 +180,7 @@
         }
         .page-content { padding: 32px; max-width: 1400px; margin: 0 auto; width: 100%;}
         .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap:16px;}
+        .section-header .actions { display: flex; gap: 10px; flex-wrap: wrap; }
         
         .table-responsive { overflow-x: auto; width: 100%; border-radius: var(--radius-sm); border: 1px solid #e5e7eb;}
         .data-table { width: 100%; border-collapse: collapse; text-align: left; background: #ffffff; }
@@ -446,7 +447,7 @@
 
     <script>
         // --- KONFIGURASI BACKEND & STORAGE ---
-        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyLChJRrwAMHGUlKS65ccq2xtG2I34hIXpN--_Fui3uHu-o0yiplFh34HrmTm8uIbKKGw/exec"; 
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxHkWXozdItR_J4iwn3KEWdp1RgCo7rkEus0MnwblM_IYTZgS1hCjjrBUAdt46gBCv6/exec"; 
         
         // PENTING: ISI CLOUDINARY CONFIG DI BAWAH INI UNTUK UPLOAD GAMBAR DARI FRONTEND
         const CLOUDINARY_CLOUD_NAME = "uzf6yunx"; 
@@ -470,6 +471,9 @@
             moduleDataCache: {}, 
             dashboardDataCache: {}, 
             compressedFiles: {},
+            
+            // Durasian cache validitas sebelum perlu fetch ulang di background (3 menit)
+            CACHE_TTL: 3 * 60 * 1000,
 
             modules: {
                 overview: { icon: 'fa-table-cells-large', title: 'Dasboard', render: 'custom' },
@@ -497,6 +501,35 @@
                 konten: { icon: 'fa-lightbulb', title: 'Ide Konten Guru', 
                     fields: [ {id: 'ide', label: 'Judul Ide', type: 'text'}, {id: 'platform', label: 'Jenis', type: 'select', options: ['Reels','Carousel','Story','Webinar']}, {id: 'status', label: 'Status', type: 'select', options: ['Draft','Proses','Published']} ]
                 }
+            },
+
+            // --- HELPER OPTIMASI CACHE & STORAGE ---
+            getCache(endpoint) {
+                const storageKey = `tca_mock_${this.user.safeEmail}_${this.activeYear}_${endpoint}`;
+                const localData = localStorage.getItem(storageKey);
+                if (localData) {
+                    try {
+                        return JSON.parse(localData);
+                    } catch(e) {
+                        return null;
+                    }
+                }
+                return null;
+            },
+
+            setCache(endpoint, data) {
+                const storageKey = `tca_mock_${this.user.safeEmail}_${this.activeYear}_${endpoint}`;
+                const timeKey = `tca_time_${this.user.safeEmail}_${this.activeYear}_${endpoint}`;
+                localStorage.setItem(storageKey, JSON.stringify(data || {}));
+                localStorage.setItem(timeKey, Date.now().toString());
+                this.moduleDataCache[endpoint] = data || {};
+            },
+
+            isCacheValid(endpoint) {
+                const timeKey = `tca_time_${this.user.safeEmail}_${this.activeYear}_${endpoint}`;
+                const timestamp = localStorage.getItem(timeKey);
+                if (!timestamp) return false;
+                return (Date.now() - parseInt(timestamp, 10)) < this.CACHE_TTL;
             },
 
             // --- Helper Kompresi Foto & Lightbox ---
@@ -569,7 +602,6 @@
                     return;
                 }
 
-                // Hapus data/info field lama jika user memilih file baru
                 const oldInput = document.getElementById(`field_old_${fieldId}`);
                 if (oldInput) oldInput.value = '';
                 const oldPublicIdInput = document.getElementById(`field_old_${fieldId}PublicId`);
@@ -613,8 +645,6 @@
                 document.getElementById('lightboxOverlay').classList.remove('active');
                 setTimeout(() => document.getElementById('lightboxImage').src = '', 300);
             },
-            
-            // ----------------------------------
 
             init() {
                 this.buildSidebar();
@@ -658,8 +688,6 @@
                 e.preventDefault();
                 const code = document.getElementById('loginCode').value;
                 if(code === 'TCA2026' || code === 'WebApp123' || code === '') {
-                    
-                    // PERBAIKAN: Menghindari duplikasi email karena perbedaan spasi/huruf kapital
                     const rawEmail = document.getElementById('loginEmail').value;
                     const cleanEmail = String(rawEmail).toLowerCase().trim();
                     const safeEmail = cleanEmail.replace(/[.#$[\]]/g, '_'); 
@@ -714,35 +742,40 @@
                 document.getElementById('detailModalOverlay').classList.add('active');
             },
 
-            // FIX: Menggunakan POST dengan action=read untuk menghindari pemblokiran CORS saat redirect GET dari Apps Script
-            async fetchData(endpoint) {
-                const storageKey = `tca_mock_${this.user.safeEmail}_${this.activeYear}_${endpoint}`;
-                const localData = localStorage.getItem(storageKey);
-                
-                if (APPS_SCRIPT_URL.includes("GANTI_DENGAN_URL")) {
-                    return localData ? JSON.parse(localData) : {};
+            // --- OPTIMASI FETCH DATA UNTUK SPESIFIK KATEGORI ---
+            async fetchData(endpoint, forceSync = false) {
+                const cachedData = this.getCache(endpoint);
+                const valid = this.isCacheValid(endpoint);
+
+                if (cachedData) {
+                    this.moduleDataCache[endpoint] = cachedData;
                 }
 
-                const url = `${APPS_SCRIPT_URL}?endpoint=${endpoint}&year=${this.activeYear}&email=${this.user.safeEmail}&action=read&_t=${new Date().getTime()}`;
+                // Jika cache tersedia dan masih valid (tanpa paksaan sync), langsung kembalikan cache
+                if (cachedData && valid && !forceSync) {
+                    return cachedData;
+                }
+
+                if (APPS_SCRIPT_URL.includes("GANTI_DENGAN_URL")) {
+                    return cachedData || {};
+                }
+
                 try {
+                    const url = `${APPS_SCRIPT_URL}?endpoint=${endpoint}&year=${this.activeYear}&email=${this.user.safeEmail}&action=read&_t=${new Date().getTime()}`;
                     const response = await fetch(url, { method: 'POST', mode: 'cors' });
-                    if (!response.ok) throw new Error("Network response was not ok");
+                    if (!response.ok) throw new Error("Network response error");
                     const data = await response.json();
                     
-                    if (data && data.error) {
-                        console.error("Backend error:", data.error);
-                        return localData ? JSON.parse(localData) : {};
+                    if (data && !data.error) {
+                        this.setCache(endpoint, data);
+                        return data;
                     }
-                    
-                    localStorage.setItem(storageKey, JSON.stringify(data || {}));
-                    return data || {};
+                    return cachedData || {};
                 } catch (error) {
-                    console.warn("Using local storage fallback due to network/CORS error:", error);
-                    return localData ? JSON.parse(localData) : {};
+                    return cachedData || {};
                 }
             },
 
-            // FITUR BARU: Tarik semua data sekaligus untuk optimasi Dashboard (Mencegah Rate Limit Apps Script)
             async fetchAllData() {
                 if (APPS_SCRIPT_URL.includes("GANTI_DENGAN_URL")) return null;
                 
@@ -756,17 +789,39 @@
                     
                     if (data) {
                         ['jadwal', 'todo', 'rapat', 'target', 'kalender', 'refleksi', 'konten'].forEach(ep => {
-                            const epKey = `tca_mock_${this.user.safeEmail}_${this.activeYear}_${ep}`;
-                            localStorage.setItem(epKey, JSON.stringify(data[ep] || {}));
+                            this.setCache(ep, data[ep] || {});
                         });
                     }
                     return data || {};
                 } catch (error) {
-                    console.error("Fetch All Data Error:", error);
                     return null; 
                 }
             },
 
+            // Synchronize spesifik kategori secara background tanpa mengganggu UI
+            async syncCategoryInBackground(key) {
+                if (APPS_SCRIPT_URL.includes("GANTI_DENGAN_URL")) return;
+                try {
+                    const url = `${APPS_SCRIPT_URL}?endpoint=${key}&year=${this.activeYear}&email=${this.user.safeEmail}&action=read&_t=${new Date().getTime()}`;
+                    const response = await fetch(url, { method: 'POST', mode: 'cors' });
+                    if (!response.ok) return;
+                    const data = await response.json();
+                    if (data && !data.error) {
+                        const oldDataStr = JSON.stringify(this.moduleDataCache[key] || {});
+                        const newDataStr = JSON.stringify(data);
+                        this.setCache(key, data);
+                        
+                        // Update tabel secara halus jika user masih membuka kategori yang sama
+                        if (this.activeModule === key && oldDataStr !== newDataStr) {
+                            this.renderTableContent(key, data);
+                        }
+                    }
+                } catch (e) {
+                    // Silently fail in background
+                }
+            },
+
+            // --- OPTIMASI RUANG KERJA KATEGORI ---
             async loadModule(key) {
                 this.activeModule = key;
                 
@@ -792,6 +847,7 @@
                     return;
                 }
 
+                // Render UI dasar tabel
                 container.innerHTML = `
                     <div class="card" style="margin-bottom: 24px;">
                         <div class="section-header" style="margin-bottom:0;">
@@ -799,7 +855,11 @@
                                 <h2 style="margin-bottom:4px;">Manajemen ${this.modules[key].title}</h2>
                                 <p>Kelola dan perbarui data ${this.modules[key].title.toLowerCase()} Anda di sini.</p>
                             </div>
-                            <button class="btn" onclick="app.openModal(false)"><i class="fas fa-plus"></i> Tambah Data Baru</button>
+                            <div class="actions">
+                                <button class="btn btn-outline" onclick="app.printData('${key}')" title="Cetak Semua Data"><i class="fas fa-print"></i> Cetak Rekap</button>
+                                <button class="btn btn-outline" onclick="app.downloadData('${key}')" title="Simpan Semua Data (Word)"><i class="fas fa-download"></i> Simpan Rekap</button>
+                                <button class="btn" onclick="app.openModal(false)"><i class="fas fa-plus"></i> Tambah Data</button>
+                            </div>
                         </div>
                     </div>
                     <div class="card">
@@ -822,12 +882,28 @@
                     thRow.innerHTML += `<th style="text-align:right;">Tindakan</th>`;
                 }
 
-                const data = await this.fetchData(key);
-                
-                if (this.activeModule !== key) return;
-                
-                this.moduleDataCache[key] = data; 
+                // OPTIMASI: Ambil data dari local cache terlebih dahulu untuk tampilan instan
+                const cachedData = this.getCache(key);
+                if (cachedData) {
+                    this.moduleDataCache[key] = cachedData;
+                    this.renderTableContent(key, cachedData);
+                    
+                    // Jika cache belum kadaluarsa, tidak perlu melakukan sync ulang
+                    if (!this.isCacheValid(key)) {
+                        this.syncCategoryInBackground(key);
+                    }
+                } else {
+                    // Jika belum ada cache sama sekali, fetch dari jaringan secara langsung
+                    const freshData = await this.fetchData(key, true);
+                    if (this.activeModule === key) {
+                        this.renderTableContent(key, freshData);
+                    }
+                }
+            },
 
+            // Helper terpisah untuk merender baris-baris tabel
+            renderTableContent(key, data) {
+                const fields = this.modules[key].fields;
                 const tBody = document.getElementById('tableBody');
                 if (!tBody) return;
                 
@@ -884,7 +960,7 @@
                     });
                     
                     row += `
-                        <td style="text-align:right; min-width: 100px;">
+                        <td style="text-align:right; white-space: nowrap; min-width: 100px;">
                             <button class="btn-ghost" onclick="app.editData('${key}', '${id}')" title="Edit Data"><i class="fas fa-edit" style="color:var(--info)"></i></button>
                             <button class="btn-ghost" onclick="app.deleteData('${key}', '${id}')" title="Hapus Permanen"><i class="fas fa-trash-alt" style="color:var(--danger)"></i></button>
                         </td>
@@ -893,8 +969,8 @@
                 }
             },
 
+            // --- OPTIMASI RENDER DASHBOARD (INSTANT CACHE FIRST) ---
             async renderPremiumDashboard(container) {
-                // FUNGSI HELPER UNTUK MENGHASILKAN UI (Pemisahan Logika & Tampilan untuk optimasi render)
                 const renderUI = (dataCache) => {
                     const safeObjValues = (obj) => obj && !obj.error ? Object.values(obj) : [];
                     
@@ -1289,50 +1365,49 @@
                     }, 100);
                 };
 
-                // OPTIMASI RENDER: Cek Memory Cache atau LocalStorage
-                const hasMemoryCache = Object.keys(this.dashboardDataCache).length > 0;
+                // Ambil data lokal dari cache terlebih dahulu
+                let localDash = {};
+                const categories = ['jadwal', 'todo', 'rapat', 'target', 'kalender', 'refleksi', 'konten'];
                 
-                if (hasMemoryCache) {
-                    // Render instan dari memory
+                categories.forEach(ep => {
+                    const cache = this.getCache(ep);
+                    if (cache) localDash[ep] = cache;
+                });
+                
+                const hasLocalCache = Object.keys(localDash).length > 0;
+                
+                if (hasLocalCache) {
+                    this.dashboardDataCache = localDash;
                     renderUI(this.dashboardDataCache);
                 } else {
-                    // Coba render instan dari local storage jika baru dibuka (Refresh page)
-                    let localDash = {};
-                    ['jadwal', 'todo', 'rapat', 'target', 'kalender', 'refleksi', 'konten'].forEach(ep => {
-                        const sk = `tca_mock_${this.user.safeEmail}_${this.activeYear}_${ep}`;
-                        const str = localStorage.getItem(sk);
-                        if (str) localDash[ep] = JSON.parse(str);
-                    });
-                    
-                    const hasLocalCache = Object.values(localDash).some(v => v && Object.keys(v).length > 0);
-                    
-                    if (hasLocalCache) {
-                        this.dashboardDataCache = localDash;
-                        renderUI(this.dashboardDataCache);
-                    } else {
-                        // Jika tidak ada data sama sekali, tampilkan efek Skeleton
-                        container.innerHTML = `
-                            <div class="dash-grid">
-                                <div class="card col-12 skeleton" style="height: 120px;"></div>
-                                <div class="stat-cards-container col-12">
-                                    <div class="card skeleton" style="height: 100px;"></div>
-                                    <div class="card skeleton" style="height: 100px;"></div>
-                                    <div class="card skeleton" style="height: 100px;"></div>
-                                    <div class="card skeleton" style="height: 100px;"></div>
-                                </div>
-                                <div class="col-12" style="display:flex; gap:12px;">
-                                    <div class="card skeleton" style="height:80px; flex:1;"></div>
-                                    <div class="card skeleton" style="height:80px; flex:1;"></div>
-                                    <div class="card skeleton" style="height:80px; flex:1;"></div>
-                                </div>
-                                <div class="card col-8 skeleton" style="height: 300px;"></div>
-                                <div class="card col-4 skeleton" style="height: 300px;"></div>
+                    // Tampilkan Skeleton jika belum ada data sama sekali di cache
+                    container.innerHTML = `
+                        <div class="dash-grid">
+                            <div class="card col-12 skeleton" style="height: 120px;"></div>
+                            <div class="stat-cards-container col-12">
+                                <div class="card skeleton" style="height: 100px;"></div>
+                                <div class="card skeleton" style="height: 100px;"></div>
+                                <div class="card skeleton" style="height: 100px;"></div>
+                                <div class="card skeleton" style="height: 100px;"></div>
                             </div>
-                        `;
-                    }
+                            <div class="col-12" style="display:flex; gap:12px;">
+                                <div class="card skeleton" style="height:80px; flex:1;"></div>
+                                <div class="card skeleton" style="height:80px; flex:1;"></div>
+                                <div class="card skeleton" style="height:80px; flex:1;"></div>
+                            </div>
+                            <div class="card col-8 skeleton" style="height: 300px;"></div>
+                            <div class="card col-4 skeleton" style="height: 300px;"></div>
+                        </div>
+                    `;
                 }
 
-                // SYNCHRONIZATION DI BACKGROUND (Diam-diam menarik data terbaru tanpa loading layr penuh)
+                // Periksa apakah semua cache masih valid, jika ada yang expired baru LAKUKAN sync background
+                const isAllCacheValid = categories.every(ep => this.isCacheValid(ep));
+                if (hasLocalCache && isAllCacheValid) {
+                    return; // Cache masih sangat segar, hemat request server!
+                }
+
+                // Sinkronisasi data terbaru di background
                 try {
                     let newData = {};
                     const allData = await this.fetchAllData();
@@ -1348,7 +1423,6 @@
                             konten: allData.konten || {}
                         };
                     } else {
-                        // Fallback ke sequential load kalau batch fail
                         const [jadwal, todo, rapat, target, kalender, refleksi, konten] = await Promise.all([
                             this.fetchData('jadwal'), this.fetchData('todo'), this.fetchData('rapat'),
                             this.fetchData('target'), this.fetchData('kalender'), this.fetchData('refleksi'), this.fetchData('konten')
@@ -1356,23 +1430,18 @@
                         newData = { jadwal, todo, rapat, target, kalender, refleksi, konten };
                     }
                     
-                    // Pastikan pengguna belum pindah ke menu lain saat data tiba
                     if (this.activeModule !== 'overview') return;
 
-                    // Cek apakah data terbaru berbeda dengan yang sedang dirender
                     const newDataStr = JSON.stringify(newData);
                     const oldDataStr = JSON.stringify(this.dashboardDataCache);
                     
-                    // Render ulang hanya jika ada perubahan (menghindari kedipan layar yang tak perlu)
-                    if (newDataStr !== oldDataStr || (!hasMemoryCache && !Object.keys(this.dashboardDataCache).length)) {
+                    if (newDataStr !== oldDataStr || !hasLocalCache) {
                         this.dashboardDataCache = newData;
                         renderUI(this.dashboardDataCache);
                     }
 
                 } catch (error) {
-                    console.error("Dashboard Background Sync Error:", error);
-                    // Jangan timpa tampilan error jika UI sudah dirender dari Cache (Biarkan cache hidup)
-                    if (!hasMemoryCache && !document.querySelector('.welcome-header')) {
+                    if (!hasLocalCache && !document.querySelector('.welcome-header')) {
                         container.innerHTML = `<div class="card col-12"><div class="empty-state"><i class="fas fa-exclamation-triangle" style="color:var(--danger)"></i><h3>Gagal Memuat Dashboard</h3><p>Terjadi kesalahan saat menarik data. Silakan refresh halaman.</p></div></div>`;
                     }
                 }
@@ -1435,7 +1504,8 @@
                 this.openModal(true); 
                 this.editingId = id;  
                 
-                const item = this.moduleDataCache[key][id]; 
+                const cacheData = this.moduleDataCache[key] || this.getCache(key) || {};
+                const item = cacheData[id]; 
                 
                 if(item) {
                     this.modules[key].fields.forEach(f => {
@@ -1449,7 +1519,6 @@
                             }
                         }
                         
-                        // MENANGANI DATA FOTO LAMA
                         if(f.type === 'file') {
                             const hiddenEl = document.getElementById(`field_old_${f.id}`);
                             if (hiddenEl) hiddenEl.value = item[f.id] || '';
@@ -1483,7 +1552,6 @@
             async saveData(e) {
                 e.preventDefault();
                 
-                // MENGAMANKAN ID LAMA: Cegah Bug Data Baru
                 const isUpdate = this.editingId !== null; 
                 const currentEditingId = this.editingId; 
                 
@@ -1495,13 +1563,11 @@
                     if (f.type === 'file') {
                         const fileInput = document.getElementById(`field_${f.id}`);
                         
-                        // Prioritaskan file baru (Baik kompresi maupun asli)
                         if (this.compressedFiles[f.id]) {
                             filesToUpload.push({ fieldId: f.id, file: this.compressedFiles[f.id] });
                         } else if (fileInput && fileInput.files.length > 0) {
                             filesToUpload.push({ fieldId: f.id, file: fileInput.files[0] });
                         } else {
-                             // Jika tidak ada upload, ambil data dari hidden field (Bisa berupa URL lama, atau kosong jika telah dihapus user)
                              const oldFileUrl = document.getElementById(`field_old_${f.id}`)?.value;
                              const oldFilePublicId = document.getElementById(`field_old_${f.id}PublicId`)?.value;
                              payload[f.id] = oldFileUrl || ''; 
@@ -1518,7 +1584,6 @@
                 this.showLoading(true);
 
                 try {
-                    // UPLOAD GAMBAR BARU JIKA ADA
                     for (let item of filesToUpload) {
                         const formData = new FormData();
                         formData.append('file', item.file);
@@ -1532,8 +1597,8 @@
                             
                             const uploadData = await uploadRes.json();
                             if (uploadData.secure_url) {
-                                payload[item.fieldId] = uploadData.secure_url; // Ganti URL lama
-                                payload[item.fieldId + 'PublicId'] = uploadData.public_id; // Simpan public_id baru
+                                payload[item.fieldId] = uploadData.secure_url; 
+                                payload[item.fieldId + 'PublicId'] = uploadData.public_id; 
                             } else {
                                 throw new Error("Gagal mengunggah gambar ke Cloudinary.");
                             }
@@ -1542,22 +1607,19 @@
                         }
                     }
 
-                    // TUTUP MODAL HANYA JIKA UPLOAD FILE BERHASIL 
-                    // (Jika gagal, modal dibiarkan tetap terbuka)
                     this.closeModal();
 
-                    const storageKey = `tca_mock_${this.user.safeEmail}_${this.activeYear}_${this.activeModule}`;
-                    let currentCache = JSON.parse(localStorage.getItem(storageKey) || "{}");
+                    // Perbarui cache lokal terlebih dahulu
+                    let currentCache = this.getCache(this.activeModule) || {};
 
                     if (isUpdate) {
-                        currentCache[currentEditingId] = payload; // Update Object di LocalStorage dengan ID lama
+                        currentCache[currentEditingId] = payload; 
                     } else {
                         const newId = 'id_' + Date.now();
                         currentCache[newId] = payload;
                     }
-                    localStorage.setItem(storageKey, JSON.stringify(currentCache));
+                    this.setCache(this.activeModule, currentCache);
 
-                    // PUSH KE FIREBASE RTDB DENGAN CODE.GS 
                     const actionParam = isUpdate ? 'update' : 'create';
                     const idParam = isUpdate ? `&id=${currentEditingId}` : '';
                     const url = `${APPS_SCRIPT_URL}?endpoint=${this.activeModule}&year=${this.activeYear}&email=${this.user.safeEmail}&action=${actionParam}${idParam}`;
@@ -1579,17 +1641,23 @@
             },
 
             async toggleTodoStatus(id) {
-                if(!this.dashboardDataCache.todo || !this.dashboardDataCache.todo[id]) return;
+                if(!this.dashboardDataCache.todo || !this.dashboardDataCache.todo[id]) {
+                    const todoCache = this.getCache('todo');
+                    if (todoCache && todoCache[id]) {
+                        this.dashboardDataCache.todo = todoCache;
+                    } else {
+                        return;
+                    }
+                }
                 
                 const todoItem = this.dashboardDataCache.todo[id];
                 const newStatus = todoItem.status === 'Selesai' ? 'Belum Selesai' : 'Selesai';
                 todoItem.status = newStatus;
                 
-                const storageKey = `tca_mock_${this.user.safeEmail}_${this.activeYear}_todo`;
-                let currentCache = JSON.parse(localStorage.getItem(storageKey) || "{}");
+                let currentCache = this.getCache('todo') || {};
                 if (currentCache[id]) {
                     currentCache[id].status = newStatus;
-                    localStorage.setItem(storageKey, JSON.stringify(currentCache));
+                    this.setCache('todo', currentCache);
                 }
 
                 this.showLoading(true);
@@ -1617,19 +1685,14 @@
                     overlay.classList.remove('active');
                 };
                 
-                // MENGATASI BAGIAN FUNGSI YANG TERPOTONG DI KODE SEBELUMNYA
                 confirmBtn.onclick = async () => {
                     overlay.classList.remove('active');
                     this.showLoading(true);
                     
-                    const storageKey = `tca_mock_${this.user.safeEmail}_${this.activeYear}_${endpoint}`;
-                    let currentCache = JSON.parse(localStorage.getItem(storageKey) || "{}");
-                    
-                    // 1. Hapus dari LocalStorage 
+                    let currentCache = this.getCache(endpoint) || {};
                     delete currentCache[id];
-                    localStorage.setItem(storageKey, JSON.stringify(currentCache));
+                    this.setCache(endpoint, currentCache);
 
-                    // 2. Kirim perintah DELETE ke Code.gs
                     const url = `${APPS_SCRIPT_URL}?endpoint=${endpoint}&year=${this.activeYear}&email=${this.user.safeEmail}&action=delete&id=${id}`;
                     
                     try {
@@ -1642,6 +1705,191 @@
                     this.showToast('Data berhasil dihapus!');
                     this.loadModule(this.activeModule); 
                 };
+            },
+
+            // --- FITUR CETAK DAN SIMPAN (REKAP PER KATEGORI) ---
+            generateDocumentHTML(key) {
+                const mod = this.modules[key];
+                
+                const data = this.moduleDataCache[key] || this.getCache(key) || {};
+                const items = Object.values(data);
+
+                if (items.length === 0) {
+                    this.showToast('Belum ada data untuk dicetak/disimpan.', true, 'fa-exclamation-circle');
+                    return null;
+                }
+
+                let html = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="utf-8">
+                    <title>Cetak Rekap Laporan - ${mod.title}</title>
+                    <style>
+                        @page { size: A4 landscape; margin: 1.5cm; }
+                        body { 
+                            font-family: 'Times New Roman', Times, serif; 
+                            line-height: 1.4; 
+                            color: #000; 
+                            padding: 20px; 
+                            max-width: 27cm; 
+                            margin: auto; 
+                            background: #fff;
+                        }
+                        .header { 
+                            text-align: center; 
+                            border-bottom: 3px solid #000; 
+                            padding-bottom: 15px; 
+                            margin-bottom: 25px; 
+                        }
+                        .header h1 { font-size: 16pt; margin: 0; text-transform: uppercase; font-weight: bold; }
+                        .header h2 { font-size: 14pt; margin: 8px 0 0; font-weight: bold; }
+                        .content-table { 
+                            width: 100%; 
+                            border-collapse: collapse; 
+                            margin-bottom: 30px; 
+                        }
+                        .content-table th, .content-table td { 
+                            padding: 8px 10px; 
+                            border: 1px solid #000; 
+                            vertical-align: top; 
+                            font-size: 11pt;
+                            word-wrap: break-word;
+                        }
+                        .content-table th { 
+                            background-color: #f0f0f0; 
+                            text-align: center;
+                            font-weight: bold;
+                        }
+                        .doc-image { 
+                            max-width: 120px; 
+                            max-height: 120px; 
+                            object-fit: contain;
+                            display: block; 
+                            margin: 5px auto;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>ADMINISTRASI GURU KREATIF</h1>
+                        <h2>REKAPITULASI LAPORAN ${mod.title.toUpperCase()}</h2>
+                    </div>
+                    
+                    <table class="content-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 5%;">No</th>
+                `;
+
+                mod.fields.forEach(f => {
+                    html += `<th>${f.label}</th>`;
+                });
+
+                html += `
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                items.forEach((item, index) => {
+                    html += `<tr><td style="text-align:center;">${index + 1}</td>`;
+                    
+                    mod.fields.forEach(f => {
+                        let val = item[f.id] || '-';
+                        
+                        if (f.type === 'file' && val !== '-') {
+                            let fileUrl = val.startsWith('http') ? val : `https://drive.google.com/uc?id=${val}`;
+                            val = `<img src="${fileUrl}" class="doc-image" alt="Lampiran">`;
+                        } else if (f.id === 'progress') {
+                            val = `${val}%`;
+                        } else if (f.type === 'textarea') {
+                            val = String(val).replace(/\n/g, '<br>');
+                        } else if (f.type === 'select' && (val === 'Selesai' || val === 'Published')) {
+                            val = `<strong>${val}</strong>`;
+                        }
+
+                        let align = (f.type === 'date' || f.id === 'progress' || f.type === 'select') ? 'text-align:center;' : '';
+                        
+                        html += `<td style="${align}">${val}</td>`;
+                    });
+                    
+                    html += `</tr>`;
+                });
+
+                const fullMonths = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+                const d = new Date();
+                const dateStr = `${d.getDate()} ${fullMonths[d.getMonth()]} ${d.getFullYear()}`;
+
+                html += `
+                        </tbody>
+                    </table>
+                    
+                    <table style="width: 100%; border: none; margin-top: 50px;">
+                        <tr>
+                            <td style="width: 60%; border: none;"></td>
+                            <td style="width: 40%; text-align: center; border: none;">
+                                <p style="margin: 0 0 5px 0;">..................., ${dateStr}</p>
+                                <p style="margin: 0;">Guru yang bersangkutan,</p>
+                                <div style="height: 80px;"></div>
+                                <p style="margin: 0;"><strong><u>${this.user.name}</u></strong></p>
+                            </td>
+                        </tr>
+                    </table>
+                </body>
+                </html>
+                `;
+                
+                return html;
+            },
+
+            printData(key) {
+                const htmlContent = this.generateDocumentHTML(key);
+                if(!htmlContent) return;
+                
+                const iframe = document.createElement('iframe');
+                iframe.style.position = 'absolute';
+                iframe.style.width = '0px';
+                iframe.style.height = '0px';
+                iframe.style.border = 'none';
+                document.body.appendChild(iframe);
+                
+                iframe.contentWindow.document.open();
+                iframe.contentWindow.document.write(htmlContent);
+                iframe.contentWindow.document.close();
+                
+                this.showToast('Menyiapkan rekap dokumen untuk dicetak...', false, 'fa-print');
+                
+                setTimeout(() => {
+                    iframe.contentWindow.focus();
+                    iframe.contentWindow.print();
+                    setTimeout(() => { document.body.removeChild(iframe); }, 2000);
+                }, 1000);
+            },
+
+            downloadData(key) {
+                const mod = this.modules[key];
+                const htmlContent = this.generateDocumentHTML(key);
+                if(!htmlContent) return;
+                
+                const blob = new Blob(['\ufeff', htmlContent], {
+                    type: 'application/msword'
+                });
+                
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                
+                const dateStr = new Date().toISOString().slice(0,10).replace(/-/g,'');
+                const filename = `Rekap_${mod.title.replace(/\s+/g, '_')}_${dateStr}.doc`;
+                
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                
+                this.showToast('Rekap dokumen berhasil disimpan (.doc)', false, 'fa-download');
             }
         };
 
