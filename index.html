@@ -205,7 +205,10 @@
         .toast { position: fixed; bottom: 24px; right: 24px; background: var(--bg-card); border: 1px solid var(--border); padding: 16px 24px; border-radius: var(--radius-md); display: flex; align-items: center; gap: 12px; transform: translateX(150%); transition: var(--transition); z-index: 10000; box-shadow: 0 10px 30px rgba(0,0,0,0.1); font-size: 0.95rem; font-weight: 500; color: var(--text-primary);}
         .toast.show { transform: translateX(0); }
         
+        .loading-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(255,255,255,0.9); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: center; z-index: 9999; flex-direction: column; }
+        
         .spinner { width: 30px; height: 30px; border: 3px solid #e5e7eb; border-top-color: var(--accent-green); border-radius: 50%; animation: spin 1s linear infinite; display: inline-block; }
+        .loading-overlay .spinner { width: 50px; height: 50px; border-width: 4px; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
         .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; display: inline-block; white-space: nowrap;}
@@ -308,7 +311,13 @@
 </head>
 <body>
 
-    <!-- NOTIFIKASI TOAST (HANYA INI UNTUK FEEDBACK BERHASIL/GAGAL) -->
+    <!-- MENGEMBALIKAN LOADING OVERLAY SEPERTI INDEX LAMA -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <p style="margin-top:16px; font-weight:600; color:var(--text-primary); letter-spacing:1px;">Memproses Data...</p>
+    </div>
+
+    <!-- NOTIFIKASI TOAST -->
     <div class="toast" id="toastBox">
         <i class="fas fa-check-circle" id="toastIcon" style="font-size:1.2rem;"></i>
         <span id="toastMessage"></span>
@@ -719,6 +728,10 @@
                 setTimeout(()=>t.classList.remove('show'), 3500); 
             },
 
+            showLoading(show) { 
+                document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none'; 
+            },
+
             showDetailModal(title, content) {
                 document.getElementById('detailModalTitle').textContent = title;
                 document.getElementById('detailModalContent').innerHTML = content;
@@ -1091,6 +1104,11 @@
             },
 
             editData(key, id) {
+                if (id.startsWith('temp_')) {
+                    this.showToast('Data sedang disinkronisasi ke server. Mohon tunggu beberapa saat.', true, 'fa-clock');
+                    return;
+                }
+                
                 this.activeModule = key; this.openModal(true); this.editingId = id;  
                 const item = (this.moduleDataCache[key] || this.getCache(key) || {})[id]; 
                 
@@ -1116,37 +1134,50 @@
                 }
             },
 
-            // --- OPTIMISTIC UI: SAVE DATA ---
+            // --- OPTIMISTIC UI: SAVE DATA DENGAN SINKRONISASI ID ---
             async saveData(e) {
                 e.preventDefault();
                 
-                const submitBtn = e.target.querySelector('button[type="submit"]');
-                const originalBtnText = submitBtn.innerHTML;
+                const submitBtn = e.target.querySelector('button[type="submit"]') || document.getElementById('saveDataBtn');
+                const originalBtnText = submitBtn ? submitBtn.innerHTML : '<i class="fas fa-save"></i> Simpan Data';
                 
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+                }
                 
+                // MENGAMANKAN ID LAMA: Cegah Bug Data Baru
                 const isUpdate = this.editingId !== null; 
                 const currentEditingId = this.editingId; 
                 
                 const mod = this.modules[this.activeModule];
-                let payload = {}; let filesToUpload = []; let filesToDelete = [];
+                let payload = {}; 
+                let filesToUpload = []; 
+                let filesToDelete = [];
                 
                 mod.fields.forEach(f => { 
                     if (f.type === 'file') {
                         const fileInput = document.getElementById(`field_${f.id}`);
                         const oldFileUrl = document.getElementById(`field_old_${f.id}`)?.value;
                         const oldFilePublicId = document.getElementById(`field_old_${f.id}PublicId`)?.value;
+                        
                         const hasNewFile = this.compressedFiles[f.id] || (fileInput && fileInput.files.length > 0);
                         
                         if (hasNewFile) {
                             if (oldFilePublicId) filesToDelete.push(oldFilePublicId);
-                            filesToUpload.push({ fieldId: f.id, file: this.compressedFiles[f.id] || fileInput.files[0] });
+                            
+                            if (this.compressedFiles[f.id]) {
+                                filesToUpload.push({ fieldId: f.id, file: this.compressedFiles[f.id] });
+                            } else {
+                                filesToUpload.push({ fieldId: f.id, file: fileInput.files[0] });
+                            }
                         } else if (this.pendingDeletes && this.pendingDeletes[f.id]) {
                             if (oldFilePublicId) filesToDelete.push(oldFilePublicId);
-                            payload[f.id] = ''; payload[f.id + 'PublicId'] = '';
+                            payload[f.id] = ''; 
+                            payload[f.id + 'PublicId'] = '';
                         } else {
-                             payload[f.id] = oldFileUrl || ''; payload[f.id + 'PublicId'] = oldFilePublicId || '';
+                             payload[f.id] = oldFileUrl || ''; 
+                             payload[f.id + 'PublicId'] = oldFilePublicId || '';
                         }
                     } else {
                         const el = document.getElementById(`field_${f.id}`);
@@ -1155,79 +1186,106 @@
                 });
 
                 try {
-                    // Upload ke Cloudinary (harus di-await sebelum simpan data agar dapat URL)
-                    if (filesToUpload.length > 0) {
-                        await Promise.all(filesToUpload.map(async (item) => {
-                            const formData = new FormData(); formData.append('file', item.file); formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-                            const uploadRes = await fetch(CLOUDINARY_UPLOAD_URL, { method: 'POST', body: formData });
-                            const uploadData = await uploadRes.json();
-                            if (uploadData.secure_url) {
-                                payload[item.fieldId] = uploadData.secure_url; payload[item.fieldId + 'PublicId'] = uploadData.public_id; 
-                            } else throw new Error("Gagal mengunggah gambar");
-                        }));
+                    // Upload ke Cloudinary (Di-await karena kita butuh URL gambarnya)
+                    for (let item of filesToUpload) {
+                        const formData = new FormData(); 
+                        formData.append('file', item.file); 
+                        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+                        
+                        const uploadRes = await fetch(CLOUDINARY_UPLOAD_URL, { method: 'POST', body: formData });
+                        const uploadData = await uploadRes.json();
+                        
+                        if (uploadData.secure_url) {
+                            payload[item.fieldId] = uploadData.secure_url; 
+                            payload[item.fieldId + 'PublicId'] = uploadData.public_id; 
+                        } else {
+                            throw new Error("Gagal mengunggah gambar");
+                        }
                     }
 
-                    // TAHAP 1: OPTIMISTIC UI UPDATE (Simpan ke Cache & Update UI Langsung)
+                    // TAHAP 1: OPTIMISTIC UI UPDATE (Render langsung ke layar)
                     let currentCache = this.getCache(this.activeModule) || {};
-                    if (isUpdate) currentCache[currentEditingId] = payload; 
-                    else currentCache['id_' + Date.now()] = payload;
+                    let tempId = 'temp_' + Date.now();
+                    
+                    if (isUpdate) {
+                        currentCache[currentEditingId] = payload; 
+                    } else {
+                        currentCache[tempId] = payload; // Gunakan ID sementara
+                    }
                     this.setCache(this.activeModule, currentCache);
 
-                    this.closeModal(); // Tutup modal INSTANT
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = originalBtnText;
-                    this.showToast(isUpdate ? 'Data berhasil diperbarui!' : 'Data tersimpan!');
-                    this.loadModule(this.activeModule); // Render ulang INSTANT
+                    this.closeModal();
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalBtnText;
+                    }
+                    this.showToast(isUpdate ? 'Data berhasil diperbarui!' : 'Data tersimpan!', false, 'fa-check');
+                    this.loadModule(this.activeModule); // RENDER INSTANT
 
-                    // TAHAP 2: BACKGROUND SYNC (Kirim ke Backend Tanpa Menunggu)
-                    if (filesToDelete.length > 0) filesToDelete.forEach(pubId => this.deleteCloudinaryFile(pubId));
+                    // TAHAP 2: BACKGROUND SYNC (FIRE-AND-FORGET)
+                    if (filesToDelete.length > 0) {
+                        filesToDelete.forEach(pubId => this.deleteCloudinaryFile(pubId));
+                    }
 
                     const actionParam = isUpdate ? 'update' : 'create';
                     const idParam = isUpdate ? `&id=${currentEditingId}` : '';
                     const url = `${APPS_SCRIPT_URL}?endpoint=${this.activeModule}&year=${this.activeYear}&email=${this.user.safeEmail}&action=${actionParam}${idParam}`;
                     
-                    // Fire and forget fetch
-                    fetch(url, { method: 'POST', body: JSON.stringify(payload), mode: 'cors' }).catch(e=>console.warn("Background sync failed", e));
+                    const moduleAtSave = this.activeModule; // Simpan context aktif saat ini
+
+                    fetch(url, { method: 'POST', body: JSON.stringify(payload), mode: 'cors' })
+                        .then(res => res.json())
+                        .then(async (data) => {
+                            // SINKRONISASI ID ASLI FIREBASE
+                            if (!isUpdate) {
+                                // Ekstrak ID asli dari respons server
+                                let realId = data.id || data.name || (data.data && (data.data.id || data.data.name));
+                                let latestCache = this.getCache(moduleAtSave) || {};
+                                
+                                if (realId && latestCache[tempId]) {
+                                    latestCache[realId] = latestCache[tempId]; // Ganti temp_ ID dengan ID asli
+                                    delete latestCache[tempId];
+                                    this.setCache(moduleAtSave, latestCache);
+                                    
+                                    // Update tabel di background secara transparan jika user masih di menu yg sama
+                                    if (this.activeModule === moduleAtSave) {
+                                        this.renderTableContent(this.activeModule, latestCache);
+                                    }
+                                } else {
+                                    // Fallback: Jika struktur response berbeda, tarik ulang data secara diam-diam
+                                    const freshData = await this.fetchData(moduleAtSave, true);
+                                    if (this.activeModule === moduleAtSave) {
+                                        this.renderTableContent(this.activeModule, freshData);
+                                    }
+                                }
+                            }
+                        })
+                        .catch(e => console.warn("Background sync failed", e));
                     
                 } catch(err) {
-                    submitBtn.disabled = false; submitBtn.innerHTML = originalBtnText;
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalBtnText;
+                    }
                     this.showToast(err.message || 'Koneksi Gagal. Coba lagi.', true, 'fa-exclamation-triangle');
                 }
             },
 
-            // --- OPTIMISTIC UI: TODO STATUS ---
-            toggleTodoStatus(id) {
-                const todoCache = this.getCache('todo') || {};
-                if(!todoCache[id]) return;
+            async deleteData(endpoint, id) {
+                if (id.startsWith('temp_')) {
+                    this.showToast('Data sedang disinkronisasi ke server. Mohon tunggu beberapa saat sebelum menghapus.', true, 'fa-clock');
+                    return;
+                }
                 
-                const todoItem = todoCache[id];
-                const newStatus = todoItem.status === 'Selesai' ? 'Belum Selesai' : 'Selesai';
-                
-                // Optimistic UI Update
-                todoItem.status = newStatus;
-                this.setCache('todo', todoCache);
-                this.dashboardDataCache.todo = todoCache;
-                
-                this.showToast(newStatus === 'Selesai' ? 'Hebat! Satu To-Do selesai!' : 'To-Do dikembalikan', false, 'fa-check-circle');
-                this.loadModule('overview'); // Render INSTANT
-
-                // Background Sync
-                const url = `${APPS_SCRIPT_URL}?endpoint=todo&year=${this.activeYear}&email=${this.user.safeEmail}&action=update&id=${id}`;
-                fetch(url, { method: 'POST', body: JSON.stringify(todoItem), mode: 'cors' }).catch(e=>console.warn("Sync failed"));
-            },
-
-            // --- OPTIMISTIC UI: DELETE DATA ---
-            deleteData(endpoint, id) {
                 const overlay = document.getElementById('confirmModalOverlay');
                 const cancelBtn = document.getElementById('confirmCancelBtn');
                 const confirmBtn = document.getElementById('confirmActionBtn');
                 
-                // Pastikan state tombol tereset SETIAP KALI modal terbuka
                 confirmBtn.disabled = false;
                 confirmBtn.innerHTML = 'Hapus';
                 overlay.classList.add('active');
                 
-                // Hapus dan reset event listener tombol lama untuk mencegah double-trigger
+                // Hapus event click yang bertumpuk dengan clone
                 const newConfirmBtn = confirmBtn.cloneNode(true);
                 confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
                 const newCancelBtn = cancelBtn.cloneNode(true);
@@ -1235,22 +1293,22 @@
                 
                 newCancelBtn.onclick = () => overlay.classList.remove('active');
                 
-                newConfirmBtn.onclick = () => {
+                newConfirmBtn.onclick = async () => {
                     newConfirmBtn.disabled = true;
                     newConfirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menghapus...';
                     
                     let currentCache = this.getCache(endpoint) || {};
                     const itemToDelete = currentCache[id];
 
-                    // TAHAP 1: OPTIMISTIC UI UPDATE
+                    // TAHAP 1: OPTIMISTIC UI (Hapus dari layar seketika)
                     delete currentCache[id];
                     this.setCache(endpoint, currentCache);
                     
-                    overlay.classList.remove('active'); // Tutup INSTANT
+                    overlay.classList.remove('active');
                     this.showToast('Data berhasil dihapus!');
-                    this.loadModule(this.activeModule); // Render INSTANT
+                    this.loadModule(this.activeModule); 
 
-                    // TAHAP 2: BACKGROUND SYNC & CLEANUP CLOUDINARY
+                    // TAHAP 2: BACKGROUND CLEANUP & SYNC
                     if (itemToDelete) {
                         const mod = this.modules[endpoint];
                         if (mod && mod.fields) {
@@ -1263,8 +1321,35 @@
                     }
 
                     const url = `${APPS_SCRIPT_URL}?endpoint=${endpoint}&year=${this.activeYear}&email=${this.user.safeEmail}&action=delete&id=${id}`;
-                    fetch(url, { method: 'POST', mode: 'cors' }).catch(e=>console.warn("Sync failed"));
+                    fetch(url, { method: 'POST', mode: 'cors' }).catch(e => console.warn("Background sync failed", e));
                 };
+            },
+
+            async toggleTodoStatus(id) {
+                if (id.startsWith('temp_')) {
+                    this.showToast('To-Do sedang disinkronisasi ke server. Mohon tunggu...', true, 'fa-clock');
+                    return;
+                }
+                
+                const todoCache = this.getCache('todo') || {};
+                if(!todoCache[id]) return;
+                
+                const todoItem = todoCache[id];
+                const newStatus = todoItem.status === 'Selesai' ? 'Belum Selesai' : 'Selesai';
+                
+                // OPTIMISTIC UI
+                todoItem.status = newStatus;
+                this.setCache('todo', todoCache);
+                if (this.dashboardDataCache && this.dashboardDataCache.todo) {
+                    this.dashboardDataCache.todo = todoCache;
+                }
+                
+                this.showToast(newStatus === 'Selesai' ? 'Hebat! Satu To-Do selesai!' : 'To-Do dikembalikan ke Belum Selesai', false, 'fa-check-circle');
+                this.loadModule('overview'); // Render INSTANT
+                
+                // BACKGROUND SYNC
+                const url = `${APPS_SCRIPT_URL}?endpoint=todo&year=${this.activeYear}&email=${this.user.safeEmail}&action=update&id=${id}`;
+                fetch(url, { method: 'POST', body: JSON.stringify(todoItem), mode: 'cors' }).catch(e=>console.warn("Remote sync failed", e));
             },
 
             // --- FITUR CETAK DAN SIMPAN (REKAP PER KATEGORI) ---
